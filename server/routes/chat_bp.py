@@ -18,12 +18,16 @@ class ImgItem(BaseModel):
 
 class Character(BaseModel):
     prompt: str
+    public_prompt: str
     img_default: str
     img_list: List[ImgItem]
 
 class Payload(BaseModel):
     user: User
     character: Character
+# <---------- Helpers ---------->
+def prompt_builder(public_prompt: str, prompt: str, previous: List[PrevItem], img_list: List[ImgItem]) -> str:
+    return (f"{public_prompt}\n{prompt}\n{[f'User: {p.user}, System: {p.system}\n' for p in previous]}Select one of the following images:\n{[f'{i.key}: {i.url}\n' for i in img_list]}")
 
 # <---------- Route ---------->
 from flask import Blueprint, jsonify, request
@@ -46,6 +50,7 @@ def onSend():
             },
             'character': {
                 'prompt': str,
+                'public_prompt': str,
                 'img_default': HttpUrl,
                 'img_list': List[{'key': str, 'url': HttpUrl}]
             }
@@ -57,10 +62,11 @@ def onSend():
         note     = user.note
         previous = user.previous
 
-        character   = payload.character
-        prompt      = character.prompt
-        img_default = character.img_default
-        img_list    = character.img_list
+        character     = payload.character
+        prompt        = character.prompt
+        public_prompt = character.public_prompt
+        img_default   = character.img_default
+        img_list      = character.img_list
     except ValidationError as e:
         return jsonify({"error": f"Wrong payload. ErrorCode: {e}"}), 400
     except Exception as e:
