@@ -8,6 +8,7 @@ class PrevItem(BaseModel):
 
 class User(BaseModel):
     id: str
+    model: str
     message: Optional[str] = " "
     note: Optional[str] = " "
     previous: List[PrevItem]
@@ -44,6 +45,7 @@ def onSend():
         {
             'user': {
                 'user_id': str,
+                'model' : str,
                 'message': str,
                 'note': str,
                 'previous': List[{'user': str, 'system': str}]
@@ -58,6 +60,7 @@ def onSend():
         """
         user     = payload.user
         user_id  = user.user_id
+        model    = user.model
         message  = user.message
         note     = user.note
         previous = user.previous
@@ -71,8 +74,15 @@ def onSend():
         return jsonify({"error": f"Wrong payload. ErrorCode: {e}"}), 400
     except Exception as e:
         return jsonify({"error": f"Unexpected error. ErrorCode: {e}"}), 500
-    # TODO: prompt build
+    
+    try:
+        prompt_input = prompt_builder(public_prompt, prompt, previous, img_list)
+    except Exception as e:
+        return jsonify({"error": f"Cannot build prompt. ErrorCode: {e}"}), 500
     # TODO: user.id 기반 db 뒤진 다음 credit 체크 --> base64 기반 인코딩 된 형태
-    # TODO: model에 맞게 message send
+    try:
+        if model == 'gpt-mini-5o':
+            pass
+    except Exception as e:
+        return jsonify({"error": f"Could not get response from {model}. ErrorCode: {e}"})
     # TODO: response 가공 후 jsonify로 return
-    pass
