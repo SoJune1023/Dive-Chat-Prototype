@@ -1,13 +1,13 @@
 import anthropic
 from typing import List
 
-def anthropic_setup_client() -> any:
+def claude_setup_client() -> any:
     client = anthropic.Anthropic(
         api_key="TEMP [TODO: LOAD API KEY FROM AWS]"
     )
     return client
 
-def anthropic_send_message(client: any, message_input: List[dict]): # TODO: message_inputvious: List[dict]에서 dict를 대화 schema로 변경
+def claude_send_message(client: any, message_input: List[dict]): # TODO: message_inputvious: List[dict]에서 dict를 대화 schema로 변경
     """ message_input : List[dict] 
         {"role": "system", "content": <previous_content>},
         {"role": "user", "content": <previous_content>}, . . .
