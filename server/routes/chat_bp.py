@@ -1,10 +1,13 @@
+# <---------- Caching ---------->
+client = "TEMP"
+
 # <---------- Schemas ---------->
 from pydantic import BaseModel, HttpUrl
 from typing import Optional, List
 
 class PrevItem(BaseModel):
-    user: str
-    system: str
+    role: str
+    content: str
 
 class User(BaseModel):
     id: str
@@ -27,12 +30,14 @@ class Payload(BaseModel):
     user: User
     character: Character
 # <---------- Helpers ---------->
-def prompt_builder(public_prompt: str, prompt: str, previous: List[PrevItem], img_list: List[ImgItem]) -> str:
-    return (f"{public_prompt}\n{prompt}\n{[f'User: {p.user}, System: {p.system}\n' for p in previous]}Select one of the following images:\n{[f'{i.key}: {i.url}\n' for i in img_list]}")
+def prompt_builder(public_prompt: str, prompt: str, img_list: List[ImgItem]) -> str:
+    return (f"{public_prompt}\n{prompt}\nSelect one of the following images:\n{[f'{i.key}: {i.url}\n' for i in img_list]}")
 
 # <---------- Route ---------->
 from flask import Blueprint, jsonify, request
 from pydantic import ValidationError
+
+import server.services as services
 
 chat_bp = Blueprint('chat_bp', __name__)
 @chat_bp.route('/onSend', methods = ['POST'])
@@ -48,7 +53,7 @@ def onSend():
                 'model' : str,
                 'message': str,
                 'note': str,
-                'previous': List[{'user': str, 'system': str}]
+                'previous': List[{'role': 'system', 'content': <content>}, {'role': 'user', 'content': <content>}]
             },
             'character': {
                 'prompt': str,
@@ -75,14 +80,21 @@ def onSend():
     except Exception as e:
         return jsonify({"error": f"Unexpected error. ErrorCode: {e}"}), 500
     
+    # TODO: user.id 기반 db 뒤진 다음 credit 체크 --> base64 기반 인코딩 된 형태
+
     try:
-        prompt_input = prompt_builder(public_prompt, prompt, previous, img_list)
+        prompt_input = prompt_builder(public_prompt, prompt, img_list)
     except Exception as e:
         return jsonify({"error": f"Cannot build prompt. ErrorCode: {e}"}), 500
-    # TODO: user.id 기반 db 뒤진 다음 credit 체크 --> base64 기반 인코딩 된 형태
+
     try:
-        if model == 'gpt-mini-5o':
-            pass
+        message_input = previous + [PrevItem(role="user", content=message)]
+    except Exception as e:
+        return jsonify({"error": f"Cannot build message. ErrorCode: {e}"})
+
+    try:
+        if model == 'claude':
+            response = services.claude_send_message(client, message_input)
     except Exception as e:
         return jsonify({"error": f"Could not get response from {model}. ErrorCode: {e}"})
     # TODO: response 가공 후 jsonify로 return
