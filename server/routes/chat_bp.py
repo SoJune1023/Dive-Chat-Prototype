@@ -61,7 +61,7 @@ def onSend():
         }
         """
         user     = payload.user
-        user_id  = user.user_id
+        id       = user.id
         model    = user.model
         message  = user.message
         note     = user.note
@@ -73,25 +73,26 @@ def onSend():
         img_default   = character.img_default
         img_list      = character.img_list
     except ValidationError as e:
-        return jsonify({"error": f"Wrong payload. ErrorCode: {e}"}), 400
+        return jsonify({"error": f"Wrong payload."}), 400
     except Exception as e:
-        return jsonify({"error": f"Unexpected error. ErrorCode: {e}"}), 500
+        return jsonify({"error": f"Unexpected error."}), 500
     
     # TODO: user.id 기반 db 뒤진 다음 credit 체크 --> base64 기반 인코딩 된 형태
 
     try:
-        prompt_input = f"{public_prompt}\n{prompt}\nSelect one of the following images:\n{[f'{i.key}: {i.url}\n' for i in img_list]}"
+        img_choices = "\n".join([f"{i.key}: {i.url}" for i in img_list])
+        prompt_input = f"{public_prompt}\n{prompt}\nSelect one of the following images:\n{img_choices}"
     except Exception as e:
-        return jsonify({"error": f"Cannot build prompt. ErrorCode: {e}"}), 500
+        return jsonify({"error": f"Cannot build prompt."}), 500
 
     try:
         message_input = previous + [PrevItem(role="user", content=message)]
     except Exception as e:
-        return jsonify({"error": f"Cannot build message. ErrorCode: {e}"})
+        return jsonify({"error": f"Cannot build message."})
 
     try:
         if model == 'claude':
             response = services.claude_send_message(client, message_input)
     except Exception as e:
-        return jsonify({"error": f"Could not get response from {model}. ErrorCode: {e}"})
+        return jsonify({"error": f"Could not get response from {model}."})
     # TODO: response 가공 후 jsonify로 return
