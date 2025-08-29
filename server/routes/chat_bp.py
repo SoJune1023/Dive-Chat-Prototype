@@ -29,9 +29,6 @@ class Character(BaseModel):
 class Payload(BaseModel):
     user: User
     character: Character
-# <---------- Helpers ---------->
-def prompt_builder(public_prompt: str, prompt: str, img_list: List[ImgItem]) -> str:
-    return (f"{public_prompt}\n{prompt}\nSelect one of the following images:\n{[f'{i.key}: {i.url}\n' for i in img_list]}")
 
 # <---------- Route ---------->
 from flask import Blueprint, jsonify, request
@@ -83,7 +80,7 @@ def onSend():
     # TODO: user.id 기반 db 뒤진 다음 credit 체크 --> base64 기반 인코딩 된 형태
 
     try:
-        prompt_input = prompt_builder(public_prompt, prompt, img_list)
+        prompt_input = f"{public_prompt}\n{prompt}\nSelect one of the following images:\n{[f'{i.key}: {i.url}\n' for i in img_list]}"
     except Exception as e:
         return jsonify({"error": f"Cannot build prompt. ErrorCode: {e}"}), 500
 
