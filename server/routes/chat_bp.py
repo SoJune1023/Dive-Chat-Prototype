@@ -1,5 +1,6 @@
 # <---------- Caching ---------->
-client = "TEMP"
+claude_client = "TEMP"
+gpt_client = "TEMP"
 
 # <---------- Schemas ---------->
 from pydantic import BaseModel, HttpUrl
@@ -138,7 +139,9 @@ def onSend():
 
     try:
         if model == 'claude':
-            response = services.claude_send_message(client, message_input)
+            response = services.claude_send_message(claude_client, message_input)
+        if model == 'gpt':
+            response = services.gpt_5_mini_send_message(gpt_client, message_input)
     except Exception as e:
         return jsonify({"error": f"Could not get response from {model}."})
     # TODO: response 가공 후 jsonify로 return
