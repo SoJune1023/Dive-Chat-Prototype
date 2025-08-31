@@ -1,6 +1,16 @@
 # <---------- Caching ---------->
 client = "TEMP"
 
+# <---------- Helpers ---------->
+import logging
+
+logger = logging.getLogger(__name__)
+
+def _log_exc(msg: str, user_id: str | None, exc: Exception) -> None:
+    """user_id가 있을 때만 로그에 포함."""
+    suffix = f" | user_id: {user_id}" if user_id else ""
+    logger.exception(f"{msg}{suffix}", exc_info=exc)
+
 # <---------- Schemas ---------->
 from pydantic import BaseModel, HttpUrl
 from typing import Optional, List
@@ -31,7 +41,6 @@ class Payload(BaseModel):
     character: Character
 
 # <---------- Route ---------->
-import logging
 from flask import Blueprint, jsonify, request
 from pydantic import ValidationError
 
