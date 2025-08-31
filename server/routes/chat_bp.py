@@ -11,7 +11,7 @@ class PrevItem(BaseModel):
     content: str
 
 class User(BaseModel):
-    id: str
+    user_id: str
     model: str
     message: Optional[str] = " "
     note: Optional[str] = " "
@@ -89,7 +89,7 @@ def onSend():
         }
         """
         user     = payload.user
-        id       = user.id
+        user_id  = user.user_id
         model    = user.model
         message  = user.message
         note     = user.note
@@ -103,7 +103,7 @@ def onSend():
     except ValidationError as e:
         return jsonify({"error": f"Wrong payload."}), 400
     except Exception as e:
-        _log_exc("Unexpected error.\nCould not get payload.", id, e)
+        _log_exc("Unexpected error.\nCould not get payload.", user_id, e)
         return jsonify({"error": f"Unexpected error."}), 500
     
     # TODO: user.id 기반 db 뒤진 다음 credit 체크 --> base64 기반 인코딩 된 형태
@@ -115,7 +115,7 @@ def onSend():
         logger.error(
             f"Unexpected error.\n"
             f"Could not build prompt_input or img_choices.\n"
-            f"UserID: {id}"
+            f"UserID: {user_id}"
             f"ErrorInfo: {e}"
         )
         return jsonify({"error": f"Cannot build prompt."}), 500
@@ -126,7 +126,7 @@ def onSend():
         logger.error(
             f"Unexpected error.\n"
             f"Could not build message_input.\n"
-            f"UserID: {id}"
+            f"User`ID`: {user_id}"
             f"ErrorInfo: {e}"
         )
         return jsonify({"error": f"Cannot build message."})
@@ -138,7 +138,7 @@ def onSend():
             response = services.gpt_5_mini_send_message(gpt_client, message_input)
             response = services.Chat_gpt_5_mini.Response(**response)
         else:
-            logger.warning(f"Wrong AI model request | userID: {id}\npayload: {payload}")
+            logger.warning(f"Wrong AI model request | userID: {user_id}\npayload: {payload}")
             return jsonify({"error": "Wrong AI model."})
         return jsonify({"conversation": response.conversation, "image": response.image_selected})
     except Exception as e:
