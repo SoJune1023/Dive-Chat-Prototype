@@ -37,7 +37,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 def _log_exc(msg: str, user_id: str | None, exc: Exception) -> None:
-    """user_id가 있을 때만 로그에 포함."""
     suffix = f" | user_id: {user_id}" if user_id else ""
     logger.exception(f"{msg}{suffix}", exc_info=exc)
 
@@ -146,4 +145,5 @@ def onSend():
         return jsonify({"error": f"Could not get response from {model}."})
     
     # TODO: response 가공 후 jsonify로 return
-    conversation = response.conversation
+    # -> Client측에서 가공하게 하자. 그게 직관적.
+    return jsonify({"conversation": response.conversation, "image": response.image_selected})
