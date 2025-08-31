@@ -31,6 +31,7 @@ class Payload(BaseModel):
     character: Character
 
 # <---------- Route ---------->
+import logging
 from flask import Blueprint, jsonify, request
 from pydantic import ValidationError
 
@@ -75,6 +76,10 @@ def onSend():
     except ValidationError as e:
         return jsonify({"error": f"Wrong payload."}), 400
     except Exception as e:
+        logging.error(
+            f"Unexpected error on {__file__}.\n"
+            f"Could not get payload.\nErrorInfo: {e}"
+        )
         return jsonify({"error": f"Unexpected error."}), 500
     
     # TODO: user.id 기반 db 뒤진 다음 credit 체크 --> base64 기반 인코딩 된 형태
@@ -83,11 +88,23 @@ def onSend():
         img_choices = "\n".join([f"{i.key}: {i.url}" for i in img_list])
         prompt_input = f"{public_prompt}\n{prompt}\nSelect one of the following images:\n{img_choices}"
     except Exception as e:
+        logging.error(
+            f"Unexpected error on {__file__}.\n"
+            f"Could not build prompt_input or img_choices.\n"
+            f"UserID: {id}"
+            f"ErrorInfo: {e}"
+        )
         return jsonify({"error": f"Cannot build prompt."}), 500
 
     try:
         message_input = previous + [PrevItem(role="user", content=message)]
     except Exception as e:
+        logging.error(
+            f"Unexpected error on {__file__}.\n"
+            f"Could not build message_input.\n"
+            f"UserID: {id}"
+            f"ErrorInfo: {e}"
+        )
         return jsonify({"error": f"Cannot build message."})
 
     try:
