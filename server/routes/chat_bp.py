@@ -112,7 +112,7 @@ def onSend():
 
     try:
         img_choices = "\n".join([f"{i.key}: {i.url}" for i in img_list])
-        prompt_input = f"{public_prompt}\n{prompt}\nSelect one of the following images:\n{img_choices}"
+        prompt_input = f"{public_prompt}\n{prompt}\n{note}\nSelect one of the following images:\n{img_choices}"
     except Exception as e:
         logger.error(
             f"Unexpected error.\n"
