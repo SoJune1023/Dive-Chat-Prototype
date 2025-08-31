@@ -1,16 +1,6 @@
 # <---------- Caching ---------->
 client = "TEMP"
 
-# <---------- Helpers ---------->
-import logging
-
-logger = logging.getLogger(__name__)
-
-def _log_exc(msg: str, user_id: str | None, exc: Exception) -> None:
-    """user_id가 있을 때만 로그에 포함."""
-    suffix = f" | user_id: {user_id}" if user_id else ""
-    logger.exception(f"{msg}{suffix}", exc_info=exc)
-
 # <---------- Schemas ---------->
 from pydantic import BaseModel, HttpUrl
 from typing import Optional, List
@@ -39,6 +29,36 @@ class Character(BaseModel):
 class Payload(BaseModel):
     user: User
     character: Character
+
+# <---------- Helpers ---------->
+import logging
+
+logger = logging.getLogger(__name__)
+
+def _log_exc(msg: str, user_id: str | None, exc: Exception) -> None:
+    """user_id가 있을 때만 로그에 포함."""
+    suffix = f" | user_id: {user_id}" if user_id else ""
+    logger.exception(f"{msg}{suffix}", exc_info=exc)
+
+def build_img_choices(img_list: List[ImgItem]) -> any:
+    if not img_list:
+        return False
+    return "\n".join(f"{i.key}: {i.url}" for i in img_list)
+
+def build_prompt(public_prompt: str, prompt: str, img_choices: List[ImgItem] | bool) -> str:
+    if img_choices:
+        parts = [
+            (public_prompt or "").strip(),
+            (prompt or "").strip(),
+            "Select one of the following images:",
+            (img_choices or "").strip(),
+        ]
+    elif not img_choices:
+        parts = [
+            (public_prompt or "").strip(),
+            (prompt or "").strip()
+        ]
+    return "\n".join(p for p in parts if p)
 
 # <---------- Route ---------->
 from flask import Blueprint, jsonify, request
