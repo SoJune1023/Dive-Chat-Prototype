@@ -70,7 +70,6 @@ import server.services as services
 chat_bp = Blueprint('chat_bp', __name__)
 @chat_bp.route('/onSend', methods = ['POST'])
 def onSend():
-    # TODO: payload get -> 검증
     try:
         data = request.get_json(force=True)
         payload = Payload(**data)
