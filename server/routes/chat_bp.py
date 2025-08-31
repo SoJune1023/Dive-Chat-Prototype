@@ -105,10 +105,7 @@ def onSend():
     except ValidationError as e:
         return jsonify({"error": f"Wrong payload."}), 400
     except Exception as e:
-        logger.error(
-            f"Unexpected error.\n"
-            f"Could not get payload.\nErrorInfo: {e}"
-        )
+        _log_exc("Unexpected error.\nCould not get payload.", id, e)
         return jsonify({"error": f"Unexpected error."}), 500
     
     # TODO: user.id 기반 db 뒤진 다음 credit 체크 --> base64 기반 인코딩 된 형태
