@@ -126,7 +126,7 @@ def onSend():
         logger.error(
             f"Unexpected error.\n"
             f"Could not build message_input.\n"
-            f"User`ID`: {user_id}"
+            f"UserID: {user_id}"
             f"ErrorInfo: {e}"
         )
         return jsonify({"error": f"Cannot build message."})
