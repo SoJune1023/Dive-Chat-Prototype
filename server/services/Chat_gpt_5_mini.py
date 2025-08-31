@@ -10,7 +10,7 @@ class Response(BaseModel):
     image_selected: HttpUrl
 
 # <---------- Main ---------->
-from openai import OpenAI, Client
+from openai import OpenAI
 from typing import List
 
 def gpt_5_mini_setup_client() -> OpenAI:
