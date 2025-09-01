@@ -47,15 +47,29 @@ def build_img_choices(img_list: List[ImgItem]) -> str:
         return False
     return "\n".join(f"{i.key}: {i.url}" for i in img_list)
 
-def build_prompt(public_prompt: str, prompt: str, img_choices: List[ImgItem] | bool) -> str:
-    if img_choices:
+def build_prompt(public_prompt: str, prompt: str, img_choices: List[ImgItem] | bool, note: str | bool) -> str:
+    if img_choices and note:
+        parts = [
+            (public_prompt or "").strip(),
+            (prompt or "").strip(),
+            (note or "").strip(),
+            "Select one of the following images:",
+            (img_choices or "").strip(),
+        ]
+    elif not img_choices and note:
+        parts = [
+            (public_prompt or "").strip(),
+            (prompt or "").strip(),
+            (note or "").strip()
+        ]
+    elif img_choices and not note:
         parts = [
             (public_prompt or "").strip(),
             (prompt or "").strip(),
             "Select one of the following images:",
             (img_choices or "").strip(),
         ]
-    elif not img_choices:
+    else:
         parts = [
             (public_prompt or "").strip(),
             (prompt or "").strip()
