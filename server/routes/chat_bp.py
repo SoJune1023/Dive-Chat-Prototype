@@ -178,7 +178,7 @@ def onSend():
     try:
         if model == 'gpt':
             response = services.gpt_5_mini_send_message(gpt_client, message_input, prompt_input)
-            response = services.Chat_gpt_5_mini.Response(**response)
+            response = services.gpt.Response(**response)
         if model == 'gemini':
             response = services.gemini_send_message(gemini_client, message_input, prompt_input)
             response = services.Gemini.Response(**response)
