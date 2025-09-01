@@ -1,7 +1,7 @@
 # <---------- Caching ---------->
 claude_client = "TEMP"
 gpt_client = "TEMP"
-gemini_cleint = "TEMP"
+gemini_client = "TEMP"
 
 # <---------- Schemas ---------->
 from pydantic import BaseModel, HttpUrl
