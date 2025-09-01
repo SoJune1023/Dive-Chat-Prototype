@@ -40,7 +40,7 @@ def _log_exc(msg: str, user_id: str | None, exc: Exception) -> None:
     suffix = f" | user_id: {user_id}" if user_id else ""
     logger.exception(f"{msg}{suffix}", exc_info=exc)
 
-def build_img_choices(img_list: List[ImgItem]) -> any:
+def build_img_choices(img_list: List[ImgItem]) -> str:
     if not img_list:
         return False
     return "\n".join(f"{i.key}: {i.url}" for i in img_list)
