@@ -1,5 +1,4 @@
 # <---------- Caching ---------->
-claude_client = "TEMP"
 gpt_client = "TEMP"
 gemini_client = "TEMP"
 

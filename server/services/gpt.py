@@ -13,12 +13,17 @@ class Response(BaseModel):
 from openai import OpenAI
 from typing import List
 
-def gpt_5_mini_setup_client() -> OpenAI:
-    client = OpenAI(
-        api_key="TEMP (TODO: REPLACE KEY FROM AWS)",
-        max_retries="TEMP (TODO: REPLACE VALUE FROM CONFIG)",
-        # etc. . .
-    )
+gpt_client: OpenAI | None = None
+
+def init_gpt_client():
+    global gpt_client
+    if gpt_client is None:
+        gpt_client = OpenAI(
+            api_key="TEMP (TODO: REPLACE KEY FROM AWS)",
+            max_retries="TEMP (TODO: REPLACE VALUE FROM CONFIG)",
+            # etc. . .
+        )
+    return gpt_client
 
 def gpt_5_mini_send_message(client: OpenAI, message_input: List[dict], prompt_input: str):
     response = client.response.create(
