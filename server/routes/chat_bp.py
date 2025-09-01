@@ -132,10 +132,10 @@ def onSend():
         img_list      = character.img_list
         # img_default   = character.img_default
     except ValidationError as e:
-        return jsonify({"error": "Wrong payload."}), 400
+        return jsonify({"error": "Wrong payload"}), 400
     except Exception as e:
         _log_exc("Unexpected error. | Could not get payload.", user_id, e)
-        return jsonify({"error": "Unexpected error."}), 500
+        return jsonify({"error": "Unexpected error"}), 500
     
     # <---------- Credit System ---------->
     try:
@@ -165,15 +165,15 @@ def onSend():
         img_choices = build_img_choices(img_list)
         prompt_input = build_prompt(public_prompt, prompt, img_choices, note)
     except Exception as e:
-        _log_exc("Unexpected error. | Could not build prompt_input or img_choices.", user_id, e)
-        return jsonify({"error": "Cannot build prompt."}), 500
+        _log_exc("Unexpected error | Could not build prompt_input or img_choices", user_id, e)
+        return jsonify({"error": "Cannot build prompt"}), 500
 
     # <---------- Message Build ---------->
     try:
         message_input = previous + [PrevItem(role="user", content=message)]
     except Exception as e:
-        _log_exc(f"Unexpected error. | Could not build message_input.", user_id, e)
-        return jsonify({"error": "Cannot build message."})
+        _log_exc(f"Unexpected error | Could not build message_input", user_id, e)
+        return jsonify({"error": "Cannot build message"})
 
     # <---------- Send Message ---------->
     try:
@@ -185,7 +185,7 @@ def onSend():
             response = services.Gemini.Response(**response)
         else:
             _log_exc("Wrong AI model request", user_id, ValidationError)
-            return jsonify({"error": "Wrong AI model."})
+            return jsonify({"error": "Wrong AI model"})
         return jsonify({"conversation": response.conversation, "image": response.image_selected})
     except Exception as e:
-        return jsonify({"error": f"Could not get response from {model}."})
+        return jsonify({"error": f"Could not get response from {model}"})
