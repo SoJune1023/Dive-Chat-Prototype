@@ -20,7 +20,7 @@ def gemini_setup_client():
     )
     return client
 
-def gemini_send_message(client: any, message_input: List[dict]):
+def gemini_send_message(client: any, message_input: List[dict], prompt_input: str):
     response = client.models.generate_content(
         model="TEMP",
         contents="TEMP",

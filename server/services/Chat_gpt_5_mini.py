@@ -20,7 +20,7 @@ def gpt_5_mini_setup_client() -> OpenAI:
         # etc. . .
     )
 
-def gpt_5_mini_send_message(client: OpenAI, message_input: List[dict]):
+def gpt_5_mini_send_message(client: OpenAI, message_input: List[dict], prompt_input: str):
     response = client.response.create(
         model="TEMP (TODO: REPLACE VALUE ROM CONFIG)",
         text_format=Response,
