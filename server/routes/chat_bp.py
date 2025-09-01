@@ -60,6 +60,18 @@ def build_prompt(public_prompt: str, prompt: str, img_choices: List[ImgItem] | b
         ]
     return "\n".join(p for p in parts if p)
 
+# <---------- MySQL ---------->
+import pymysql
+
+conn = pymysql.connect(
+    host='localhost',
+    user='user',
+    password='passws',
+    database='db',
+    charset='utf8mb4',
+    cursorclass=pymysql.cursors.DictCursor
+)
+
 # <---------- Route ---------->
 from flask import Blueprint, jsonify, request
 from pydantic import ValidationError
@@ -106,7 +118,19 @@ def onSend():
         _log_exc("Unexpected error.\nCould not get payload.", user_id, e)
         return jsonify({"error": f"Unexpected error."}), 500
     
-    # TODO: user.id 기반 db 뒤진 다음 credit 체크 --> base64 기반 인코딩 된 형태
+    try:
+        with conn.cursor() as cursor:
+            sql = "SELECT credit FROM users WHERE id = %s"
+            cursor.execute(sql, (user_id,))
+            result = cursor.fetchone()
+
+            if result['credit'] is None:
+                raise Exception
+            credit = result["credit"]
+    except Exception as e:
+        return jsonify({"error": "Cannot "})
+    finally:
+        conn.close()
 
     try:
         img_choices = "\n".join([f"{i.key}: {i.url}" for i in img_list])
