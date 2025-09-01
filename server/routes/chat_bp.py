@@ -17,6 +17,7 @@ class User(BaseModel):
     message: Optional[str] = " "
     note: Optional[str] = " "
     previous: List[PrevItem]
+    max_credit: int
 
 class ImgItem(BaseModel):
     key: str
@@ -92,7 +93,8 @@ def onSend():
                 'model' : str,
                 'message': str,
                 'note': str,
-                'previous': List[{'role': 'system', 'content': <content>}, {'role': 'user', 'content': <content>}]
+                'previous': List[{'role': 'system', 'content': <content>}, {'role': 'user', 'content': <content>}],
+                'max_credit' : int
             },
             'character': {
                 'prompt': str,
@@ -107,6 +109,7 @@ def onSend():
         message  = user.message
         note     = user.note
         previous = user.previous
+        max_credit = user.max_credit
 
         character     = payload.character
         prompt        = character.prompt
@@ -114,10 +117,10 @@ def onSend():
         img_list      = character.img_list
         # img_default   = character.img_default
     except ValidationError as e:
-        return jsonify({"error": f"Wrong payload."}), 400
+        return jsonify({"error": "Wrong payload."}), 400
     except Exception as e:
-        _log_exc("Unexpected error.\nCould not get payload.", user_id, e)
-        return jsonify({"error": f"Unexpected error."}), 500
+        _log_exc("Unexpected error. | Could not get payload.", user_id, e)
+        return jsonify({"error": "Unexpected error."}), 500
     
     try:
         with conn.cursor() as cursor:
@@ -127,35 +130,32 @@ def onSend():
 
             if result['credit'] is None:
                 raise Exception
-            credit = result["credit"]
+            user_credit = result["credit"]
     except Exception as e:
-        logger.warning(f"Wrong user_id request | userID: {user_id}")
-        return jsonify({"error": "Wrong user id"})
+        _log_exc(f"Wrong user_id request", user_id, e)
+        return jsonify({"error": "Wrong user id"}), 400
     finally:
         conn.close()
+
+    try:
+        if user_credit < max_credit:
+            return jsonify({"error": "Out of credit"})
+    except Exception as e:
+        _log_exc("Unexpected error | Could not compare user_credit between max_credit", user_id, e)
+        return jsonify({"error": "Unexpected error"}), 500
 
     try:
         img_choices = "\n".join([f"{i.key}: {i.url}" for i in img_list])
         prompt_input = f"{public_prompt}\n{prompt}\n{note}\nSelect one of the following images:\n{img_choices}"
     except Exception as e:
-        logger.error(
-            f"Unexpected error.\n"
-            f"Could not build prompt_input or img_choices.\n"
-            f"UserID: {user_id}"
-            f"ErrorInfo: {e}"
-        )
-        return jsonify({"error": f"Cannot build prompt."}), 500
+        _log_exc("Unexpected error. | Could not build prompt_input or img_choices.", user_id, e)
+        return jsonify({"error": "Cannot build prompt."}), 500
 
     try:
         message_input = previous + [PrevItem(role="user", content=message)]
     except Exception as e:
-        logger.error(
-            f"Unexpected error.\n"
-            f"Could not build message_input.\n"
-            f"UserID: {user_id}"
-            f"ErrorInfo: {e}"
-        )
-        return jsonify({"error": f"Cannot build message."})
+        _log_exc(f"Unexpected error. | Could not build message_input.", user_id, e)
+        return jsonify({"error": "Cannot build message."})
 
     try:
         # if model == 'claude': -> TODO: Claude model 작업하기.
@@ -167,7 +167,7 @@ def onSend():
             response = services.gemini_send_message(gemini_client, message_input, prompt_input)
             response = services.Gemini.Response(**response)
         else:
-            logger.warning(f"Wrong AI model request | userID: {user_id}")
+            _log_exc("Wrong AI model request", user_id, ValidationError)
             return jsonify({"error": "Wrong AI model."})
         return jsonify({"conversation": response.conversation, "image": response.image_selected})
     except Exception as e:
