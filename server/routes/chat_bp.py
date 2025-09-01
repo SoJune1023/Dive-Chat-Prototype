@@ -1,6 +1,7 @@
 # <---------- Caching ---------->
 claude_client = "TEMP"
 gpt_client = "TEMP"
+gemini_cleint = "TEMP"
 
 # <---------- Schemas ---------->
 from pydantic import BaseModel, HttpUrl
@@ -161,6 +162,9 @@ def onSend():
         if model == 'gpt':
             response = services.gpt_5_mini_send_message(gpt_client, message_input)
             response = services.Chat_gpt_5_mini.Response(**response)
+        if model == 'gemini':
+            response = services.gemini_send_message(gemini_client, message_input)
+            response = services.Gemini.Response(**response)
         else:
             logger.warning(f"Wrong AI model request | userID: {user_id}\npayload: {payload}")
             return jsonify({"error": "Wrong AI model."})
