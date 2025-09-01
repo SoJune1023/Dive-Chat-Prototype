@@ -83,6 +83,7 @@ import server.services as services
 chat_bp = Blueprint('chat_bp', __name__)
 @chat_bp.route('/onSend', methods = ['POST'])
 def onSend():
+    # <---------- Get payload ---------->
     try:
         data = request.get_json(force=True)
         payload = Payload(**data)
@@ -122,6 +123,7 @@ def onSend():
         _log_exc("Unexpected error. | Could not get payload.", user_id, e)
         return jsonify({"error": "Unexpected error."}), 500
     
+    # <---------- Credit System ---------->
     try:
         with conn.cursor() as cursor:
             sql = "SELECT credit FROM users WHERE id = %s"
@@ -144,22 +146,23 @@ def onSend():
         _log_exc("Unexpected error | Could not compare user_credit between max_credit", user_id, e)
         return jsonify({"error": "Unexpected error"}), 500
 
+    # <---------- Prompt Build ---------->
     try:
-        img_choices = "\n".join([f"{i.key}: {i.url}" for i in img_list])
-        prompt_input = f"{public_prompt}\n{prompt}\n{note}\nSelect one of the following images:\n{img_choices}"
+        img_choices = build_img_choices(img_list)
+        prompt_input = build_prompt(public_prompt, prompt, img_choices)
     except Exception as e:
         _log_exc("Unexpected error. | Could not build prompt_input or img_choices.", user_id, e)
         return jsonify({"error": "Cannot build prompt."}), 500
 
+    # <---------- Message Build ---------->
     try:
         message_input = previous + [PrevItem(role="user", content=message)]
     except Exception as e:
         _log_exc(f"Unexpected error. | Could not build message_input.", user_id, e)
         return jsonify({"error": "Cannot build message."})
 
+    # <---------- Send Message ---------->
     try:
-        # if model == 'claude': -> TODO: Claude model 작업하기.
-        #     response = services.claude_send_message(claude_client, message_input, prompt_input)
         if model == 'gpt':
             response = services.gpt_5_mini_send_message(gpt_client, message_input, prompt_input)
             response = services.Chat_gpt_5_mini.Response(**response)
