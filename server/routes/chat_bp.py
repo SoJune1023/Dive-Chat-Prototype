@@ -163,7 +163,7 @@ def onSend():
     # <---------- Prompt Build ---------->
     try:
         img_choices = build_img_choices(img_list)
-        prompt_input = build_prompt(public_prompt, prompt, img_choices)
+        prompt_input = build_prompt(public_prompt, prompt, img_choices, note)
     except Exception as e:
         _log_exc("Unexpected error. | Could not build prompt_input or img_choices.", user_id, e)
         return jsonify({"error": "Cannot build prompt."}), 500
