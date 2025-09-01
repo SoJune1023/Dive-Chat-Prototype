@@ -129,7 +129,8 @@ def onSend():
                 raise Exception
             credit = result["credit"]
     except Exception as e:
-        return jsonify({"error": "Cannot "})
+        logger.warning(f"Wrong user_id request | userID: {user_id}")
+        return jsonify({"error": "Wrong user id"})
     finally:
         conn.close()
 
@@ -166,7 +167,7 @@ def onSend():
             response = services.gemini_send_message(gemini_client, message_input)
             response = services.Gemini.Response(**response)
         else:
-            logger.warning(f"Wrong AI model request | userID: {user_id}\npayload: {payload}")
+            logger.warning(f"Wrong AI model request | userID: {user_id}")
             return jsonify({"error": "Wrong AI model."})
         return jsonify({"conversation": response.conversation, "image": response.image_selected})
     except Exception as e:
