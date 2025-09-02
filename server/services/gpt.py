@@ -2,7 +2,7 @@
 from openai import OpenAI
 from typing import List
 
-from Schemas.ai_response import Response
+from schemas.ai_response import Response
 
 def gpt_setup_client() -> OpenAI:
     return OpenAI(

@@ -3,7 +3,7 @@ from google import genai
 from google.genai import types
 from typing import List
 
-from Schemas.ai_response import Response
+from schemas.ai_response import Response
 
 def gemini_setup_client():
     client = genai.Client(

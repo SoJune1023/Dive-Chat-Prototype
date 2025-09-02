@@ -2,7 +2,7 @@
 from flask import Blueprint, jsonify, request
 
 import chat_services
-from Schemas.chat import Payload
+from schemas.chat import Payload
 
 chat_bp = Blueprint('chat_bp', __name__)
 @chat_bp.route('/onSend', methods = ['POST'])
