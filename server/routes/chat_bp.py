@@ -1,7 +1,3 @@
-# <---------- Caching ---------->
-gpt_client = "TEMP"
-gemini_client = "TEMP"
-
 # <---------- Route ---------->
 from flask import Blueprint, jsonify, request
 
