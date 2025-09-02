@@ -22,7 +22,7 @@ from typing import List, Optional
 
 from flask import jsonify
 from pydantic import ValidationError
-from schemas.chat import Payload, ImgItem, PrevItem
+from schemas import Payload, PrevItem, ImgItem, Response
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +79,7 @@ def build_message(previous: List[PrevItem], message: str) -> List[PrevItem]:
     return previous + [PrevItem(role="user", content=message)]
 
 # <---------- Handle ---------->
-import services
+from ..services import gpt_5_mini_send_message, gpt_setup_client, gemini_setup_client, gemini_send_message
 
 def handle(req: Payload) -> tuple[bool, int, dict]:
     try:
@@ -163,11 +163,11 @@ def handle(req: Payload) -> tuple[bool, int, dict]:
     # <---------- Send Message ---------->
     try:
         if model == 'gpt':
-            response = services.gpt_5_mini_send_message(gpt_client, message_input, prompt_input)
-            response = services.gpt.Response(**response)
+            response = gpt_5_mini_send_message(gpt_client, message_input, prompt_input)
+            response = Response(**response)
         elif model == 'gemini':
-            response = services.gemini_send_message(gemini_client, message_input, prompt_input)
-            response = services.Gemini.Response(**response)
+            response = gemini_send_message(gemini_client, message_input, prompt_input)
+            response = Response(**response)
         else:
             _log_exc("Wrong AI model request", user_id, ValidationError)
             return False, 400, jsonify({"error": "Wrong AI model"})
