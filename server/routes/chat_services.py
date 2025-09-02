@@ -1,8 +1,8 @@
-# <---------- Caching ---------->
+# <---------- Caching (TEMP) ---------->
 gpt_client = "TEMP"
 gemini_client = "TEMP"
 
-# <---------- MySQL ---------->
+# <---------- MySQL (TEMP) ---------->
 import pymysql
 
 conn = pymysql.connect(
@@ -41,6 +41,7 @@ def build_prompt(public_prompt: str, prompt: str, img_choices: str, note: Option
     if img_choices:
         parts.extend(["Select one of the following images:", img_choices.strip()])
     return "\n".join(p for p in parts if p)
+
 # <---------- Handle ---------->
 from flask import jsonify
 from pydantic import ValidationError
