@@ -62,7 +62,6 @@ def handle(req: Payload) -> tuple[bool, int, dict]:
         prompt        = character.prompt
         public_prompt = character.public_prompt
         img_list      = character.img_list
-        # img_default   = character.img_default
     except ValidationError as e:
         return False, 400, jsonify({"error": "Wrong payload"})
     except Exception as e:
