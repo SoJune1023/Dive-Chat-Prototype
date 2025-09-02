@@ -80,13 +80,13 @@ def handle(req: Payload) -> tuple[bool, int, dict]:
             user_credit = result["credit"]
     except Exception as e:
         _log_exc(f"Wrong user_id request", user_id, e)
-        return False, 500, jsonify({"error": "Wrong user id"})
+        return False, 404, jsonify({"error": "Wrong user id"})
     finally:
         conn.close()
 
     try:
         if user_credit < max_credit:
-            return jsonify({"error": "Out of credit"})
+            return False, 403, jsonify({"error": "Out of credit"})
     except Exception as e:
         _log_exc("Unexpected error | Could not compare user_credit between max_credit", user_id, e)
         return False, 500, jsonify({"error": "Unexpected error"})
@@ -117,6 +117,6 @@ def handle(req: Payload) -> tuple[bool, int, dict]:
         else:
             _log_exc("Wrong AI model request", user_id, ValidationError)
             return False, 400, jsonify({"error": "Wrong AI model"})
-        return True, 100, jsonify({"conversation": response.conversation, "image": response.image_selected})
+        return True, 200, jsonify({"conversation": response.conversation, "image": response.image_selected})
     except Exception as e:
-        return False, 500, jsonify({"error": f"Could not get response from {model}"})
+        return False, 502, jsonify({"error": f"Could not get response from {model}"})
