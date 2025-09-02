@@ -1,18 +1,9 @@
-# <---------- Schemas ---------->
-from pydantic import BaseModel, HttpUrl
-
-class MessageItem(BaseModel):
-    said: str
-    context: str
-
-class Response(BaseModel):
-    conversation: List[MessageItem]
-    image_selected: HttpUrl
-
 # <---------- Main ---------->
 from google import genai
 from google.genai import types
 from typing import List
+
+from Schemas.ai_response import Response
 
 def gemini_setup_client():
     client = genai.Client(

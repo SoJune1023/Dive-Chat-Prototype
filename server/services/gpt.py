@@ -1,17 +1,8 @@
-# <---------- Schemas ---------->
-from pydantic import BaseModel, HttpUrl
-
-class MessageItem(BaseModel):
-    said: str
-    context: str
-
-class Response(BaseModel):
-    conversation: List[MessageItem]
-    image_selected: HttpUrl
-
 # <---------- Main ---------->
 from openai import OpenAI
 from typing import List
+
+from Schemas.ai_response import Response
 
 def gpt_setup_client() -> OpenAI:
     return OpenAI(
