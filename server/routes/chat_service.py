@@ -105,10 +105,8 @@ def handle(req: Payload) -> tuple[bool, int, dict]:
     try:
         user_credit = load_user_credit(user_id)
     except UserNotFound as e:
-        _log_exc("User not found", user_id, e)
         return False, 404, jsonify({"error": "User not found"})
     except InvalidUserData as e:
-        _log_exc("Invalid user data", user_id, e)
         return False, 500, jsonify({"error": "Invalid user data"})
     except DatabaseError as e:
         _log_exc("Database error while loading user_credit", user_id, e)
