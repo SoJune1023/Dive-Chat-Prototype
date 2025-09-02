@@ -4,15 +4,17 @@ gemini_client = "TEMP"
 
 # <---------- MySQL (TEMP) ---------->
 import pymysql
+from pymysql.connections import Connection
 
-conn = pymysql.connect(
-    host='localhost',
-    user='user',
-    password='passws',
-    database='db',
-    charset='utf8mb4',
-    cursorclass=pymysql.cursors.DictCursor
-)
+def get_conn() -> Connection:
+    return pymysql.connect(
+        host='localhost',
+        user='user',
+        password='passws',
+        database='db',
+        charset='utf8mb4',
+        cursorclass=pymysql.cursors.DictCursor
+    )
 
 # <---------- Helpers ---------->
 import logging
@@ -26,9 +28,33 @@ def _log_exc(msg: str, user_id: str | None, exc: Exception) -> None:
     suffix = f" | user_id: {user_id}" if user_id else ""
     logger.exception(f"{msg}{suffix}", exc_info=exc)
 
+def user_credit_loader(user_id: str) -> tuple[bool, int, dict]:
+    try:
+        conn = get_conn()
+        with conn.cursor() as cursor:
+            sql = "SELECT credit FROM users WHERE id = %s"
+            cursor.execute(sql, (user_id,))
+            result = cursor.fetchone()
+
+            if result is None:
+                return False, 404, jsonify({"error": "User not found"})
+
+            credit = result.get("credit")
+            if credit is None:
+                return False, 500, jsonify({"error": "Invalid user data"})
+
+            conn.close()
+            return True, 200, jsonify({"credit": credit})
+    except Exception as e:
+        _log_exc("DB error while loading user_credit", user_id, e)
+        return False, 500, jsonify({"error": "Database error"})
+
+def user_credit_checker(user_credit: int, max_credit: int) -> tuple[bool, int, dict]:
+    return False, 403, jsonify({"error": "Out of credit"}) if user_credit < max_credit else True, 200, jsonify({})
+
 def build_img_choices(img_list: List[ImgItem]) -> str:
     if not img_list:
-        return False
+        return ""
     return "\n".join(f"{i.key}: {i.url}" for i in img_list)
 
 def build_prompt(public_prompt: str, prompt: str, img_choices: str, note: Optional[str]) -> str:
@@ -70,23 +96,15 @@ def handle(req: Payload) -> tuple[bool, int, dict]:
     
     # <---------- Credit System ---------->
     try:
-        with conn.cursor() as cursor:
-            sql = "SELECT credit FROM users WHERE id = %s"
-            cursor.execute(sql, (user_id,))
-            result = cursor.fetchone()
-
-            if result['credit'] is None:
-                raise Exception
-            user_credit = result["credit"]
+        user_credit = user_credit_loader(user_id)
     except Exception as e:
         _log_exc(f"Wrong user_id request", user_id, e)
         return False, 404, jsonify({"error": "Wrong user id"})
-    finally:
-        conn.close()
 
     try:
-        if user_credit < max_credit:
-            return False, 403, jsonify({"error": "Out of credit"})
+        ok, code, data = user_credit_checker(user_id, max_credit)
+        if not ok:
+            return False, code, data
     except Exception as e:
         _log_exc("Unexpected error | Could not compare user_credit between max_credit", user_id, e)
         return False, 500, jsonify({"error": "Unexpected error"})
@@ -111,12 +129,16 @@ def handle(req: Payload) -> tuple[bool, int, dict]:
         if model == 'gpt':
             response = services.gpt_5_mini_send_message(gpt_client, message_input, prompt_input)
             response = services.gpt.Response(**response)
-        if model == 'gemini':
+        elif model == 'gemini':
             response = services.gemini_send_message(gemini_client, message_input, prompt_input)
             response = services.Gemini.Response(**response)
         else:
             _log_exc("Wrong AI model request", user_id, ValidationError)
             return False, 400, jsonify({"error": "Wrong AI model"})
-        return True, 200, jsonify({"conversation": response.conversation, "image": response.image_selected})
+        return True, 200, jsonify({
+            "conversation": response.conversation,
+            "image": response.image_selected
+        })
     except Exception as e:
+        _log_exc("Upstream model error", user_id, e)
         return False, 502, jsonify({"error": f"Could not get response from {model}"})
