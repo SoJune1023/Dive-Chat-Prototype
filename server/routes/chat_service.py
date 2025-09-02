@@ -75,17 +75,20 @@ def build_prompt(public_prompt: str, prompt: str, img_choices: str, note: Option
         parts.extend(["Select one of the following images:", img_choices.strip()])
     return "\n".join(p for p in parts if p)
 
+def build_message(previous: List[PrevItem], message: str) -> List[PrevItem]:
+    return previous + [PrevItem(role="user", content=message)]
+
 # <---------- Handle ---------->
 import services
 
 def handle(req: Payload) -> tuple[bool, int, dict]:
     try:
-        user     = req.user
-        user_id  = user.user_id
-        model    = user.model
-        message  = user.message
-        note     = user.note
-        previous = user.previous
+        user       = req.user
+        user_id    = user.user_id
+        model      = user.model
+        message    = user.message
+        note       = user.note
+        previous   = user.previous
         max_credit = user.max_credit
 
         character     = req.character
@@ -128,7 +131,7 @@ def handle(req: Payload) -> tuple[bool, int, dict]:
 
     # <---------- Message Build ---------->
     try:
-        message_input = previous + [PrevItem(role="user", content=message)]
+        message_input = build_message(previous, message)
     except Exception as e:
         _log_exc(f"Unexpected error | Could not build message_input", user_id, e)
         return False, 500, jsonify({"error": "Cannot build message"})
