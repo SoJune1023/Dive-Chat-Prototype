@@ -47,7 +47,7 @@ from pydantic import ValidationError
 
 import services
 
-def handle(req: Payload):
+def handle(req: Payload) -> tuple[bool, int, dict]:
     try:
         user     = req.user
         user_id  = user.user_id
@@ -63,10 +63,10 @@ def handle(req: Payload):
         img_list      = character.img_list
         # img_default   = character.img_default
     except ValidationError as e:
-        return jsonify({"error": "Wrong payload"}), 400
+        return False, 400, jsonify({"error": "Wrong payload"})
     except Exception as e:
         _log_exc("Unexpected error. | Could not get payload.", user_id, e)
-        return jsonify({"error": "Unexpected error"}), 500
+        return False, 500, jsonify({"error": "Unexpected error"})
     
     # <---------- Credit System ---------->
     try:
@@ -80,7 +80,7 @@ def handle(req: Payload):
             user_credit = result["credit"]
     except Exception as e:
         _log_exc(f"Wrong user_id request", user_id, e)
-        return jsonify({"error": "Wrong user id"}), 400
+        return False, 500, jsonify({"error": "Wrong user id"})
     finally:
         conn.close()
 
@@ -89,7 +89,7 @@ def handle(req: Payload):
             return jsonify({"error": "Out of credit"})
     except Exception as e:
         _log_exc("Unexpected error | Could not compare user_credit between max_credit", user_id, e)
-        return jsonify({"error": "Unexpected error"}), 500
+        return False, 500, jsonify({"error": "Unexpected error"})
 
     # <---------- Prompt Build ---------->
     try:
@@ -97,14 +97,14 @@ def handle(req: Payload):
         prompt_input = build_prompt(public_prompt, prompt, img_choices, note)
     except Exception as e:
         _log_exc("Unexpected error | Could not build prompt_input or img_choices", user_id, e)
-        return jsonify({"error": "Cannot build prompt"}), 500
+        return False, 500, jsonify({"error": "Cannot build prompt"})
 
     # <---------- Message Build ---------->
     try:
         message_input = previous + [PrevItem(role="user", content=message)]
     except Exception as e:
         _log_exc(f"Unexpected error | Could not build message_input", user_id, e)
-        return jsonify({"error": "Cannot build message"})
+        return False, 500, jsonify({"error": "Cannot build message"})
 
     # <---------- Send Message ---------->
     try:
@@ -116,7 +116,7 @@ def handle(req: Payload):
             response = services.Gemini.Response(**response)
         else:
             _log_exc("Wrong AI model request", user_id, ValidationError)
-            return jsonify({"error": "Wrong AI model"})
-        return jsonify({"conversation": response.conversation, "image": response.image_selected})
+            return False, 400, jsonify({"error": "Wrong AI model"})
+        return True, 100, jsonify({"conversation": response.conversation, "image": response.image_selected})
     except Exception as e:
-        return jsonify({"error": f"Could not get response from {model}"})
+        return False, 500, jsonify({"error": f"Could not get response from {model}"})
