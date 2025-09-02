@@ -19,7 +19,6 @@ def get_conn() -> Connection:
 # <---------- Helpers ---------->
 import logging
 from typing import List, Optional
-
 from flask import jsonify
 from pydantic import ValidationError
 from schemas import Payload, PrevItem, ImgItem, Response
@@ -83,7 +82,7 @@ from ..services import gpt_5_mini_send_message, gpt_setup_client, gemini_setup_c
 
 def handle(req: Payload) -> tuple[bool, int, dict]:
     try:
-        """ payloaf : dict
+        """ payload : dict
         {
             user: {
                 user_id: str
