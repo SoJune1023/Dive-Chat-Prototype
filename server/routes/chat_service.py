@@ -50,7 +50,10 @@ def user_credit_loader(user_id: str) -> tuple[bool, int, dict]:
         return False, 500, jsonify({"error": "Database error"})
 
 def user_credit_checker(user_credit: int, max_credit: int) -> tuple[bool, int, dict]:
-    return False, 403, jsonify({"error": "Out of credit"}) if user_credit < max_credit else True, 200, jsonify({})
+    if user_credit < max_credit:
+        return False, 403, jsonify({"error": "Out of credit"})
+    else:
+        True, 200, jsonify({})
 
 def build_img_choices(img_list: List[ImgItem]) -> str:
     if not img_list:
