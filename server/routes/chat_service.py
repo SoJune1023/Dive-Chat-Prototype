@@ -105,7 +105,7 @@ def handle(req: Payload) -> tuple[bool, int, dict]:
         return False, 404, jsonify({"error": "Wrong user id"})
 
     try:
-        ok, code, data = user_credit_checker(user_id, max_credit)
+        ok, code, data = user_credit_checker(user_credit, max_credit)
         if not ok:
             return False, code, data
     except Exception as e:
