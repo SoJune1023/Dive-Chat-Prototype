@@ -18,7 +18,7 @@ conn = pymysql.connect(
 import logging
 from typing import List, Optional
 
-from .chat_bp import Payload, ImgItem, PrevItem
+from Schemas.chat import Payload, ImgItem, PrevItem
 
 logger = logging.getLogger(__name__)
 
