@@ -8,5 +8,5 @@ chat_bp = Blueprint('chat_bp', __name__)
 @chat_bp.route('/onSend', methods = ['POST'])
 def onSend():
     req = Payload(**request.get_json(force=True))
-    ok, code, body = chat_services(req)
+    ok, code, body = chat_services.handle(req)
     return jsonify(body), code
