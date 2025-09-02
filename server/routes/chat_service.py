@@ -76,9 +76,6 @@ def build_prompt(public_prompt: str, prompt: str, img_choices: str, note: Option
     return "\n".join(p for p in parts if p)
 
 # <---------- Handle ---------->
-from flask import jsonify
-from pydantic import ValidationError
-
 import services
 
 def handle(req: Payload) -> tuple[bool, int, dict]:
