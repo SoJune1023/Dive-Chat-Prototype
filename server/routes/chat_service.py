@@ -54,7 +54,7 @@ def load_user_credit(user_id: str) -> int:
         try:
             conn.close()
         except Exception:
-            pass
+            _log_exc("Cannot close connection", None, e)
 
 def check_user_credit(user_credit: int, max_credit: int) -> bool:
     return user_credit >= max_credit
@@ -83,13 +83,39 @@ import services
 
 def handle(req: Payload) -> tuple[bool, int, dict]:
     try:
+        """ payloaf : dict
+        {
+            user: {
+                user_id: str
+                model: str
+                message: str
+                note: str
+                max_credit: int
+                previous: list[{
+                    user: str
+                },
+                {
+                    system: str
+                }, . . .
+                ]
+            }
+            character: {
+                prompt: str
+                public_prompt: str
+                img_list: list[{
+                    key: str
+                    url: http5
+                }]
+            }
+        }
+        """
         user       = req.user
         user_id    = user.user_id
         model      = user.model
         message    = user.message
         note       = user.note
-        previous   = user.previous
         max_credit = user.max_credit
+        previous   = user.previous
 
         character     = req.character
         prompt        = character.prompt
