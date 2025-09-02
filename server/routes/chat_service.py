@@ -20,6 +20,8 @@ def get_conn() -> Connection:
 import logging
 from typing import List, Optional
 
+from flask import jsonify
+from pydantic import ValidationError
 from schemas.chat import Payload, ImgItem, PrevItem
 
 logger = logging.getLogger(__name__)
@@ -28,32 +30,34 @@ def _log_exc(msg: str, user_id: str | None, exc: Exception) -> None:
     suffix = f" | user_id: {user_id}" if user_id else ""
     logger.exception(f"{msg}{suffix}", exc_info=exc)
 
-def user_credit_loader(user_id: str) -> tuple[bool, int, dict]:
+class UserNotFound(Exception): ...
+class InvalidUserData(Exception): ...
+class DatabaseError(Exception): ...
+
+def load_user_credit(user_id: str) -> tuple[bool, int, dict]:
+    conn = get_conn()
     try:
-        conn = get_conn()
         with conn.cursor() as cursor:
-            sql = "SELECT credit FROM users WHERE id = %s"
-            cursor.execute(sql, (user_id,))
-            result = cursor.fetchone()
-
-            if result is None:
-                return False, 404, jsonify({"error": "User not found"})
-
-            credit = result.get("credit")
+            cursor.execute("SELECT credit FROM users WHERE id = %s", (user_id,))
+            row = cursor.fetchone()
+            if row is None:
+                raise UserNotFound("User not found")
+            credit = row.get("credit")
             if credit is None:
-                return False, 500, jsonify({"error": "Invalid user data"})
-
-            conn.close()
-            return True, 200, jsonify({"credit": credit})
+                raise InvalidUserData("Invalid user data")
+            return credit
+    except (UserNotFound, InvalidUserData):
+        raise
     except Exception as e:
-        _log_exc("DB error while loading user_credit", user_id, e)
-        return False, 500, jsonify({"error": "Database error"})
+        raise DatabaseError("Database error") from e
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
 
-def user_credit_checker(user_credit: int, max_credit: int) -> tuple[bool, int, dict]:
-    if user_credit < max_credit:
-        return False, 403, jsonify({"error": "Out of credit"})
-    else:
-        True, 200, jsonify({})
+def check_user_credit(user_credit: int, max_credit: int) -> bool:
+    return user_credit >= max_credit
 
 def build_img_choices(img_list: List[ImgItem]) -> str:
     if not img_list:
@@ -99,17 +103,22 @@ def handle(req: Payload) -> tuple[bool, int, dict]:
     
     # <---------- Credit System ---------->
     try:
-        user_credit = user_credit_loader(user_id)
-    except Exception as e:
-        _log_exc(f"Wrong user_id request", user_id, e)
-        return False, 404, jsonify({"error": "Wrong user id"})
+        user_credit = load_user_credit(user_id)
+    except UserNotFound as e:
+        _log_exc("User not found", user_id, e)
+        return False, 404, jsonify({"error": "User not found"})
+    except InvalidUserData as e:
+        _log_exc("Invalid user data", user_id, e)
+        return False, 500, jsonify({"error": "Invalid user data"})
+    except DatabaseError as e:
+        _log_exc("Database error while loading user_credit", user_id, e)
+        return False, 500, jsonify({"error": "Database error"})
 
     try:
-        ok, code, data = user_credit_checker(user_credit, max_credit)
-        if not ok:
-            return False, code, data
+        if not check_user_credit(user_credit, max_credit):
+            return False, 403, jsonify({"error": "Out of credit"})
     except Exception as e:
-        _log_exc("Unexpected error | Could not compare user_credit between max_credit", user_id, e)
+        _log_exc("Unexpected error | Could not compare user_credit and max_credit", user_id, e)
         return False, 500, jsonify({"error": "Unexpected error"})
 
     # <---------- Prompt Build ---------->
