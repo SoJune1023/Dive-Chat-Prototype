@@ -80,7 +80,7 @@ def build_message(previous: List[PrevItem], message: str) -> List[PrevItem]:
 # <---------- Handle ---------->
 from ..services import gpt_5_mini_send_message, gemini_send_message
 
-def payload_system(req: Payload) -> tuple[str, str, str, str, int, List[PrevItem], str, str, List[ImgItem]] | tuple[bool, int, dict]:
+def payload_system_flow(req: Payload) -> tuple[str, str, str, str, int, List[PrevItem], str, str, List[ImgItem]] | tuple[bool, int, dict]:
     try:
         user       = req.user
         user_id    = user.user_id # str
@@ -100,7 +100,7 @@ def payload_system(req: Payload) -> tuple[str, str, str, str, int, List[PrevItem
     except Exception:
         raise Exception("Payload system: Unexpected error", 500)
 
-def credit_system(user_id: str, max_credit: int) -> None:
+def credit_system_flow(user_id: str, max_credit: int) -> None:
     try:
         user_credit = load_user_credit(user_id)
         if not check_user_credit(user_credit, max_credit):
@@ -113,7 +113,7 @@ def credit_system(user_id: str, max_credit: int) -> None:
         _log_exc("Database error while loading user_credit", user_id, e) # DatabaseError는 매우 큰 Erroe -> log 남김
         raise DatabaseError("Database error", 500)
 
-def build_prompt(img_list: List[ImgItem], public_prompt: str, prompt: str, note: str) -> str:
+def build_prompt_flow(img_list: List[ImgItem], public_prompt: str, prompt: str, note: str) -> str:
     try:
         img_choices = build_img_choices(img_list)
         prompt_input = build_prompt(public_prompt, prompt, img_choices, note)
@@ -122,7 +122,7 @@ def build_prompt(img_list: List[ImgItem], public_prompt: str, prompt: str, note:
         _log_exc("Unexpected error | Could not build prompt_input or img_choices", None, e)
         return False, 500, jsonify({"error": "Cannot build prompt"})
 
-def build_message(previous: List[PrevItem], message: str) -> List[PrevItem]:
+def build_message_flow(previous: List[PrevItem], message: str) -> List[PrevItem]:
     try:
         message_input = build_message(previous, message)
         return message_input
@@ -130,7 +130,7 @@ def build_message(previous: List[PrevItem], message: str) -> List[PrevItem]:
         _log_exc(f"Unexpected error | Could not build message_input", None, e)
         raise Exception("Cannot build message", 500)
 
-def send_message(model: str, message_input: List[PrevItem], prompt_input: str) -> Response:
+def send_message_flow(model: str, message_input: List[PrevItem], prompt_input: str) -> Response:
     try:
         if model == 'gpt':
             response = gpt_5_mini_send_message(gpt_client, message_input, prompt_input)
@@ -147,11 +147,11 @@ def send_message(model: str, message_input: List[PrevItem], prompt_input: str) -
 
 def handle(req: Payload) -> tuple[bool, int, dict]:
     try:
-        user_id, model, message, note, max_credit, previous, prompt, public_prompt, img_list = payload_system(req)
-        credit_system(user_id, max_credit)
-        prompt_input = build_prompt(img_list, public_prompt, prompt, note)
-        message_input = build_message(previous, message)
-        response = send_message(model, message_input, prompt_input)
+        user_id, model, message, note, max_credit, previous, prompt, public_prompt, img_list = payload_system_flow(req)
+        credit_system_flow(user_id, max_credit)
+        prompt_input = build_prompt_flow(img_list, public_prompt, prompt, note)
+        message_input = build_message_flow(previous, message)
+        response = send_message_flow(model, message_input, prompt_input)
         return True, 200, response
     # TODO: custom error 계층 박어넣기
     except Exception as e:
