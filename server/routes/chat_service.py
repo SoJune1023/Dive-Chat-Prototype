@@ -76,90 +76,61 @@ def build_prompt(public_prompt: str, prompt: str, img_choices: str, note: Option
 
 def build_message(previous: List[PrevItem], message: str) -> List[PrevItem]:
     return previous + [PrevItem(role="user", content=message)]
-
+    
 # <---------- Handle ---------->
 from ..services import gpt_5_mini_send_message, gemini_send_message
 
-def handle(req: Payload) -> tuple[bool, int, dict]:
+def payload_system(req: Payload) -> tuple[str, str, str, str, int, List[PrevItem], str, str, List[ImgItem]] | tuple[bool, int, dict]:
     try:
-        """ payload : dict
-        {
-            user: {
-                user_id: str
-                model: str
-                message: str
-                note: str
-                max_credit: int
-                previous: list[{
-                    user: str
-                },
-                {
-                    system: str
-                }, . . .
-                ]
-            }
-            character: {
-                prompt: str
-                public_prompt: str
-                img_list: list[{
-                    key: str
-                    url: http5
-                }]
-            }
-        }
-        """
         user       = req.user
-        user_id    = user.user_id
-        model      = user.model
-        message    = user.message
-        note       = user.note
-        max_credit = user.max_credit
-        previous   = user.previous
+        user_id    = user.user_id # str
+        model      = user.model # str
+        message    = user.message # str
+        note       = user.note # str
+        max_credit = user.max_credit # int
+        previous   = user.previous # list[{user: str}, {system: str}, . . .]
 
         character     = req.character
-        prompt        = character.prompt
-        public_prompt = character.public_prompt
-        img_list      = character.img_list
-    except ValidationError as e:
-        return False, 400, jsonify({"error": "Wrong payload"})
-    except Exception as e:
-        _log_exc("Unexpected error. | Could not get payload.", user_id, e)
-        return False, 500, jsonify({"error": "Unexpected error"})
-    
-    # <---------- Credit System ---------->
+        prompt        = character.prompt # str
+        public_prompt = character.public_prompt # str
+        img_list      = character.img_list # list[{key: str, url: http5}]
+        return tuple[user_id, model, message, note, max_credit, previous, prompt, public_prompt, img_list]
+    except ValidationError:
+        raise ValidationError("Payload system: Wrong payload", 400)
+    except Exception:
+        raise Exception("Payload system: Unexpected error", 500)
+
+def credit_system(user_id: str, max_credit: int) -> None:
     try:
         user_credit = load_user_credit(user_id)
-    except UserNotFound as e:
-        return False, 404, jsonify({"error": "User not found"})
-    except InvalidUserData as e:
-        return False, 500, jsonify({"error": "Invalid user data"})
-    except DatabaseError as e:
-        _log_exc("Database error while loading user_credit", user_id, e)
-        return False, 500, jsonify({"error": "Database error"})
-
-    try:
         if not check_user_credit(user_credit, max_credit):
-            return False, 403, jsonify({"error": "Out of credit"})
-    except Exception as e:
-        _log_exc("Unexpected error | Could not compare user_credit and max_credit", user_id, e)
-        return False, 500, jsonify({"error": "Unexpected error"})
+            raise Exception("Out of credit", 403)
+    except UserNotFound as e:
+        raise UserNotFound("Credit system: User not found", 404)
+    except InvalidUserData as e:
+        raise InvalidUserData("Credit system: Invalid user data", 500)
+    except DatabaseError as e:
+        _log_exc("Database error while loading user_credit", user_id, e) # DatabaseError는 매우 큰 Erroe -> log 남김
+        raise DatabaseError("Database error", 500)
 
-    # <---------- Prompt Build ---------->
+def build_prompt(img_list: List[ImgItem], public_prompt: str, prompt: str, note: str) -> str:
     try:
         img_choices = build_img_choices(img_list)
         prompt_input = build_prompt(public_prompt, prompt, img_choices, note)
+        return prompt_input
     except Exception as e:
-        _log_exc("Unexpected error | Could not build prompt_input or img_choices", user_id, e)
+        _log_exc("Unexpected error | Could not build prompt_input or img_choices", None, e)
         return False, 500, jsonify({"error": "Cannot build prompt"})
 
-    # <---------- Message Build ---------->
+def build_message(previous: List[PrevItem], message: str) -> List[PrevItem]:
     try:
         message_input = build_message(previous, message)
+        return message_input
     except Exception as e:
-        _log_exc(f"Unexpected error | Could not build message_input", user_id, e)
-        return False, 500, jsonify({"error": "Cannot build message"})
+        _log_exc(f"Unexpected error | Could not build message_input", None, e)
+        raise Exception("Cannot build message", 500)
 
-    # <---------- Send Message ---------->
+def send_message(model: str, message_input: List[PrevItem], prompt_input: str) -> Response:
     try:
         if model == 'gpt':
             response = gpt_5_mini_send_message(gpt_client, message_input, prompt_input)
@@ -168,12 +139,21 @@ def handle(req: Payload) -> tuple[bool, int, dict]:
             response = gemini_send_message(gemini_client, message_input, prompt_input)
             response = Response(**response)
         else:
-            _log_exc("Wrong AI model request", user_id, ValidationError)
-            return False, 400, jsonify({"error": "Wrong AI model"})
-        return True, 200, jsonify({
-            "conversation": response.conversation,
-            "image": response.image_selected
-        })
+            raise ValidationError("Wrong AI model", 400)
+        return response
     except Exception as e:
-        _log_exc("Upstream model error", user_id, e)
-        return False, 502, jsonify({"error": f"Could not get response from {model}"})
+        _log_exc("Upstream model error", None, e)
+        raise (f"Could not get response from {model}", 502)
+
+def handle(req: Payload) -> tuple[bool, int, dict]:
+    try:
+        user_id, model, message, note, max_credit, previous, prompt, public_prompt, img_list = payload_system(req)
+        credit_system(user_id, max_credit)
+        prompt_input = build_prompt(img_list, public_prompt, prompt, note)
+        message_input = build_message(previous, message)
+        response = send_message(model, message_input, prompt_input)
+        return True, 200, response
+    # TODO: custom error 계층 박어넣기
+    except Exception as e:
+        _log_exc("Error in handle", getattr(req.user, "user_id", None), e)
+        return False, 500, jsonify({"error": "Unexcept error in gandle"})
