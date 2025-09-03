@@ -19,7 +19,6 @@ def get_conn() -> Connection:
 # <---------- Helpers ---------->
 import logging
 from typing import List, Optional
-from flask import jsonify
 from pydantic import ValidationError
 from schemas import Payload, PrevItem, ImgItem, Response
 
@@ -78,9 +77,10 @@ def build_message(previous: List[PrevItem], message: str) -> List[PrevItem]:
     return previous + [PrevItem(role="user", content=message)]
     
 # <---------- Handle ---------->
+from .exceptions import AppError
 from ..services import gpt_5_mini_send_message, gemini_send_message
 
-def payload_system_flow(req: Payload) -> tuple[str, str, Optional[str], Optional[str], int, List[PrevItem], str, str, Optional[List[ImgItem]]]:
+def payload_system_flow(req: Payload) -> tuple[str, str, Optional[str], Optional[str], int, List[PrevItem],str, str, Optional[List[ImgItem]]]:
     try:
         user = req.user
         character = req.character
@@ -95,23 +95,23 @@ def payload_system_flow(req: Payload) -> tuple[str, str, Optional[str], Optional
             character.public_prompt, # str
             character.img_list # Optional[List[ImgItem]]
         )
-    except ValidationError:
-        raise ValidationError("Payload system: Wrong payload", 400)
-    except Exception:
-        raise Exception("Payload system: Unexpected error", 500)
+    except ValidationError as e:
+        raise AppError("Payload system: Wrong payload", 400) from e
+    except Exception as e:
+        raise Exception("Payload system: Unexpected error", 500) from e
 
 def credit_system_flow(user_id: str, max_credit: int) -> None:
     try:
         user_credit = load_user_credit(user_id)
         if not check_user_credit(user_credit, max_credit):
-            raise Exception("Out of credit", 403)
+            raise AppError("Out of credit", 403)
     except UserNotFound as e:
-        raise UserNotFound("Credit system: User not found", 404)
+        raise AppError("Credit system: User not found", 404) from e
     except InvalidUserData as e:
-        raise InvalidUserData("Credit system: Invalid user data", 500)
+        raise AppError("Credit system: Invalid user data", 500) from e
     except DatabaseError as e:
         _log_exc("Database error while loading user_credit", user_id, e) # DatabaseError는 매우 큰 Erroe -> log 남김
-        raise DatabaseError("Database error", 500)
+        raise AppError("Database error", 500) from e
 
 def build_prompt_flow(img_list: List[ImgItem], public_prompt: str, prompt: str, note: str) -> str:
     try:
@@ -120,7 +120,7 @@ def build_prompt_flow(img_list: List[ImgItem], public_prompt: str, prompt: str, 
         return prompt_input
     except Exception as e:
         _log_exc("Unexpected error | Could not build prompt_input or img_choices", None, e)
-        return False, 500, jsonify({"error": "Cannot build prompt"})
+        raise AppError("Cannot build prompt", 500) from e
 
 def build_message_flow(previous: List[PrevItem], message: str) -> List[PrevItem]:
     try:
@@ -128,7 +128,7 @@ def build_message_flow(previous: List[PrevItem], message: str) -> List[PrevItem]
         return message_input
     except Exception as e:
         _log_exc(f"Unexpected error | Could not build message_input", None, e)
-        raise Exception("Cannot build message", 500)
+        raise AppError("Cannot build message", 500) from e
 
 def send_message_flow(model: str, message_input: List[PrevItem], prompt_input: str) -> Response:
     try:
@@ -139,11 +139,11 @@ def send_message_flow(model: str, message_input: List[PrevItem], prompt_input: s
             response = gemini_send_message(gemini_client, message_input, prompt_input)
             response = Response(**response)
         else:
-            raise ValidationError("Wrong AI model", 400)
+            raise AppError("Wrong AI model", 400)
         return response
     except Exception as e:
         _log_exc("Upstream model error", None, e)
-        raise (f"Could not get response from {model}", 502)
+        raise AppError(f"Could not get response from {model}", 502) from e
 
 def handle(req: Payload) -> tuple[bool, int, dict]:
     try:
@@ -152,8 +152,8 @@ def handle(req: Payload) -> tuple[bool, int, dict]:
         prompt_input = build_prompt_flow(img_list, public_prompt, prompt, note)
         message_input = build_message_flow(previous, message)
         response = send_message_flow(model, message_input, prompt_input)
-        return True, 200, response
+        return True, 200, {"conversation": response.conversation, "image_selected": response.image_selected}
     # TODO: custom error 계층 박어넣기
     except Exception as e:
-        _log_exc("Error in handle", getattr(req.user, "user_id", None), e)
-        return False, 500, jsonify({"error": "Unexcept error in gandle"})
+        _log_exc("Unexpected error in handle", getattr(req.user, "user_id", None), e)
+        return False, 500, {"error": "Unexpected error in handle"}

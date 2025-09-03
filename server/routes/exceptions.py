@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 @dataclass
 class AppError(Exception):
-    http_status: int
     message: str
+    http_status: int
     err_code: str = "ERR_UNKNOWN"
     details: Optional[Dict[str, Any]] = None
     user_id: Optional[str] = None
