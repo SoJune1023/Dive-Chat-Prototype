@@ -16,7 +16,14 @@ def get_conn() -> Connection:
         cursorclass=pymysql.cursors.DictCursor
     )
 
-# <---------- Helpers ---------->
+# -------- Optional Normalizer --------
+def _normalize_optional_str(s: Optional[str]) -> Optional[str]:
+    if s is None:
+        return None
+    s = s.strip()
+    return s if s else None
+
+# <---------- Build helpers ---------->
 import logging
 from typing import List, Optional
 from pydantic import ValidationError
@@ -76,7 +83,7 @@ def build_prompt(public_prompt: str, prompt: str, img_choices: str, note: Option
 def build_message(previous: List[PrevItem], message: str) -> List[PrevItem]:
     return previous + [PrevItem(role="user", content=message)]
 
-# <---------- Handle ---------->
+# <---------- Flows ---------->
 from .exceptions import AppError
 from ..services import gpt_5_mini_send_message, gemini_send_message
 
@@ -90,13 +97,14 @@ def payload_system_flow(req: Payload) -> tuple[str, str, Optional[str], Optional
         return (
             user.user_id, # str
             user.model, # str
-            user.message, # Optional[str]
-            user.note, # Optional[str]
+            _normalize_optional_str(user.message), # Optional[str]
+            _normalize_optional_str(user.note), # Optional[str]
             user.max_credit, # int
             user.previous, # List[PrevItem]
+            
             character.prompt, # str
             character.public_prompt, # str
-            character.img_list # Optional[List[ImgItem]]
+            character.img_list if character.img_list else None # Optional[List[ImgItem]]
         )
     except ValidationError as e:
         raise AppError("Payload system: Wrong payload", 400) from e
@@ -148,6 +156,7 @@ def send_message_flow(model: str, message_input: List[PrevItem], prompt_input: s
         _log_exc("Upstream model error", None, e)
         raise AppError(f"Could not get response from {model}", 502) from e
 
+# <---------- Handle ---------->
 def handle(req: Payload) -> tuple[bool, int, dict]:
     try:
         user_id, model, message, note, max_credit, previous, prompt, public_prompt, img_list = payload_system_flow(req)
