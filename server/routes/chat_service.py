@@ -156,7 +156,8 @@ def handle(req: Payload) -> tuple[bool, int, dict]:
         message_input = build_message_flow(previous, message)
         response = send_message_flow(model, message_input, prompt_input)
         return True, 200, {"conversation": response.conversation, "image_selected": response.image_selected}
-    # TODO: custom error 계층 박어넣기
+    except AppError as e:
+        return False, e.http_status, e.to_dict()
     except Exception as e:
         _log_exc("Unexpected error in handle", getattr(req.user, "user_id", None), e)
         return False, 500, {"error": "Unexpected error in handle"}
