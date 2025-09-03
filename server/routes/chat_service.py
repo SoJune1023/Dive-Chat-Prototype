@@ -111,7 +111,7 @@ def credit_system_flow(user_id: str, max_credit: int) -> None:
     except InvalidUserData as e:
         raise AppError("Credit system: Invalid user data", 500) from e
     except DatabaseError as e:
-        _log_exc("Database error | Cannot loading user_credit", user_id, e) # DatabaseError는 매우 큰 Erroe -> log 남김
+        _log_exc("Database error | Cannot loading user_credit", user_id, e) # DatabaseError는 매우 큰 Error -> log 남김
         raise AppError("Database error", 500) from e
 
 def build_prompt_flow(img_list: List[ImgItem], public_prompt: str, prompt: str, note: str) -> str:
