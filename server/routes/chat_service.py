@@ -80,20 +80,20 @@ def build_message(previous: List[PrevItem], message: str) -> List[PrevItem]:
 # <---------- Handle ---------->
 from ..services import gpt_5_mini_send_message, gemini_send_message
 
-def payload_system_flow(req: Payload) -> tuple[str, str, str, str, int, List[PrevItem], str, str, List[ImgItem]] | tuple[bool, int, dict]:
+def payload_system_flow(req: Payload) -> tuple[str, str, Optional[str], Optional[str], int, List[PrevItem], str, str, Optional[List[ImgItem]]]:
     try:
         user       = req.user
         user_id    = user.user_id # str
         model      = user.model # str
-        message    = user.message # str
-        note       = user.note # str
+        message    = user.message # Optional[str]
+        note       = user.note # Optional[str]
         max_credit = user.max_credit # int
         previous   = user.previous # list[{user: str}, {system: str}, . . .]
 
         character     = req.character
         prompt        = character.prompt # str
         public_prompt = character.public_prompt # str
-        img_list      = character.img_list # list[{key: str, url: http5}]
+        img_list      = character.img_list # Optional[list[{key: str, url: http5}]]
         return tuple[user_id, model, message, note, max_credit, previous, prompt, public_prompt, img_list]
     except ValidationError:
         raise ValidationError("Payload system: Wrong payload", 400)
