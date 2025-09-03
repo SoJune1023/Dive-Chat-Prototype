@@ -85,15 +85,15 @@ def payload_system_flow(req: Payload) -> tuple[str, str, Optional[str], Optional
         user = req.user
         character = req.character
         return (
-            user.user_id,
-            user.model,
-            user.message,
-            user.note,
-            user.max_credit,      # 이름을 required_credit으로 바꾸는 걸 권장
-            user.previous,
-            character.prompt,
-            character.public_prompt,
-            character.img_list
+            user.user_id, # str
+            user.model, # str
+            user.message, # Optional[str]
+            user.note, # Optional[str]
+            user.max_credit, # int
+            user.previous, # List[PrevItem]
+            character.prompt, # str
+            character.public_prompt, # str
+            character.img_list # Optional[List[ImgItem]]
         )
     except ValidationError:
         raise ValidationError("Payload system: Wrong payload", 400)
