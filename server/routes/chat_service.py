@@ -91,9 +91,6 @@ def payload_system_flow(req: Payload) -> tuple[str, str, Optional[str], Optional
     try:
         user = req.user
         character = req.character
-        # I M P O R T A N T ! ! !
-        # 반드시 client에서 Optional이 가능 한 값은
-        # value를 Null로 둘 것!
         return (
             user.user_id, # str
             user.model, # str
@@ -101,7 +98,7 @@ def payload_system_flow(req: Payload) -> tuple[str, str, Optional[str], Optional
             _normalize_optional_str(user.note), # Optional[str]
             user.max_credit, # int
             user.previous, # List[PrevItem]
-            
+
             character.prompt, # str
             character.public_prompt, # str
             character.img_list if character.img_list else None # Optional[List[ImgItem]]
