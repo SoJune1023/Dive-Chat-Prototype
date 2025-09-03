@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 def _log_exc(msg: str, user_id: str | None, exc: Exception) -> None:
     suffix = f" | user_id: {user_id}" if user_id else ""
-    logger.exception(f"{msg}{suffix}", exc_info=exc)
+    logger.error(f"{msg}{suffix}", exc_info=exc)
 
 class UserNotFound(Exception): ...
 class InvalidUserData(Exception): ...
@@ -57,7 +57,7 @@ def load_user_credit(user_id: str) -> int:
 def check_user_credit(user_credit: int, max_credit: int) -> bool:
     return user_credit >= max_credit
 
-def build_img_choices(img_list: List[ImgItem]) -> str:
+def build_img_choices(img_list: Optional[List[ImgItem]]) -> str:
     if not img_list:
         return ""
     return "\n".join(f"{i.key}: {i.url}" for i in img_list)
@@ -75,7 +75,7 @@ def build_prompt(public_prompt: str, prompt: str, img_choices: str, note: Option
 
 def build_message(previous: List[PrevItem], message: str) -> List[PrevItem]:
     return previous + [PrevItem(role="user", content=message)]
-    
+
 # <---------- Handle ---------->
 from .exceptions import AppError
 from ..services import gpt_5_mini_send_message, gemini_send_message
