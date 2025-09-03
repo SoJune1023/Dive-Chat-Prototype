@@ -16,13 +16,6 @@ def get_conn() -> Connection:
         cursorclass=pymysql.cursors.DictCursor
     )
 
-# -------- Optional Normalizer --------
-def _normalize_optional_str(s: Optional[str]) -> Optional[str]:
-    if s is None:
-        return None
-    s = s.strip()
-    return s if s else None
-
 # <---------- Build helpers ---------->
 import logging
 from typing import List, Optional
@@ -94,8 +87,8 @@ def payload_system_flow(req: Payload) -> tuple[str, str, Optional[str], Optional
         return (
             user.user_id, # str
             user.model, # str
-            _normalize_optional_str(user.message), # Optional[str]
-            _normalize_optional_str(user.note), # Optional[str]
+            user.message if user.message else None, # Optional[str]
+            user.note if user.note else None, # Optional[str]
             user.max_credit, # int
             user.previous, # List[PrevItem]
 
