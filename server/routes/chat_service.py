@@ -130,7 +130,7 @@ def build_prompt_flow(img_list: List[ImgItem], public_prompt: str, prompt: str, 
         _log_exc("Unexpected error | Could not build prompt_input or img_choices", None, e)
         raise AppError("Cannot build prompt", 500) from e
 
-def build_message_flow(previous: List[PrevItem], message: str) -> List[PrevItem]:
+def build_message_flow(previous: List[PrevItem], message: Optional[str]) -> List[PrevItem]:
     try:
         message_input = build_message(previous, message)
         return message_input
