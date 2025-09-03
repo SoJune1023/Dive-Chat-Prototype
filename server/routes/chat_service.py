@@ -78,7 +78,7 @@ def build_message(previous: List[PrevItem], message: str) -> List[PrevItem]:
     return previous + [PrevItem(role="user", content=message)]
 
 # <---------- Handle ---------->
-from ..services import gpt_5_mini_send_message, gpt_setup_client, gemini_setup_client, gemini_send_message
+from ..services import gpt_5_mini_send_message, gemini_send_message
 
 def handle(req: Payload) -> tuple[bool, int, dict]:
     try:
