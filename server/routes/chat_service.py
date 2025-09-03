@@ -59,7 +59,7 @@ def load_user_credit(user_id: str) -> int:
         try:
             conn.close()
         except Exception:
-            _log_exc("Cannot close connection", None, e)
+            _log_exc("PyMySQL error | Cannot close connection", None, e)
 
 def check_user_credit(user_credit: int, max_credit: int) -> bool:
     return user_credit >= max_credit
@@ -118,7 +118,7 @@ def credit_system_flow(user_id: str, max_credit: int) -> None:
     except InvalidUserData as e:
         raise AppError("Credit system: Invalid user data", 500) from e
     except DatabaseError as e:
-        _log_exc("Database error while loading user_credit", user_id, e) # DatabaseError는 매우 큰 Erroe -> log 남김
+        _log_exc("Database error | Cannot loading user_credit", user_id, e) # DatabaseError는 매우 큰 Erroe -> log 남김
         raise AppError("Database error", 500) from e
 
 def build_prompt_flow(img_list: List[ImgItem], public_prompt: str, prompt: str, note: str) -> str:
@@ -150,7 +150,7 @@ def send_message_flow(model: str, message_input: List[PrevItem], prompt_input: s
             raise AppError("Wrong AI model", 400)
         return response
     except Exception as e:
-        _log_exc("Upstream model error", None, e)
+        _log_exc("Upstream model error | Cannot get response", None, e)
         raise AppError(f"Could not get response from {model}", 502) from e
 
 # <---------- Handle ---------->
@@ -165,5 +165,5 @@ def handle(req: Payload) -> tuple[bool, int, dict]:
     except AppError as e:
         return False, e.http_status, e.to_dict()
     except Exception as e:
-        _log_exc("Unexpected error in handle", getattr(req.user, "user_id", None), e)
+        _log_exc("Unexpected error | Somthing went wrong in handle", getattr(req.user, "user_id", None), e)
         return False, 500, {"error": "Unexpected error in handle"}
