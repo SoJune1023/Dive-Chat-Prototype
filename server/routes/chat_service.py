@@ -135,12 +135,11 @@ def send_message_flow(model: str, message_input: List[PrevItem], prompt_input: s
     try:
         if model == 'gpt':
             response = gpt_5_mini_send_message(gpt_client, message_input, prompt_input)
-            response = Response(**response)
         elif model == 'gemini':
             response = gemini_send_message(gemini_client, message_input, prompt_input)
-            response = Response(**response)
         else:
             raise AppError("Wrong AI model", 400)
+        response = Response(**response)
         return response
     except Exception as e:
         _log_exc("Upstream model error | Cannot get response", None, e)
