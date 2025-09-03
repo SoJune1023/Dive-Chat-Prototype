@@ -82,19 +82,19 @@ from ..services import gpt_5_mini_send_message, gemini_send_message
 
 def payload_system_flow(req: Payload) -> tuple[str, str, Optional[str], Optional[str], int, List[PrevItem], str, str, Optional[List[ImgItem]]]:
     try:
-        user       = req.user
-        user_id    = user.user_id # str
-        model      = user.model # str
-        message    = user.message # Optional[str]
-        note       = user.note # Optional[str]
-        max_credit = user.max_credit # int
-        previous   = user.previous # list[{user: str}, {system: str}, . . .]
-
-        character     = req.character
-        prompt        = character.prompt # str
-        public_prompt = character.public_prompt # str
-        img_list      = character.img_list # Optional[list[{key: str, url: http5}]]
-        return tuple[user_id, model, message, note, max_credit, previous, prompt, public_prompt, img_list]
+        user = req.user
+        character = req.character
+        return (
+            user.user_id,
+            user.model,
+            user.message,
+            user.note,
+            user.max_credit,      # 이름을 required_credit으로 바꾸는 걸 권장
+            user.previous,
+            character.prompt,
+            character.public_prompt,
+            character.img_list
+        )
     except ValidationError:
         raise ValidationError("Payload system: Wrong payload", 400)
     except Exception:
