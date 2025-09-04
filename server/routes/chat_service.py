@@ -1,6 +1,5 @@
 # <---------- Caching (TEMP) ---------->
-gpt_client = "TEMP"
-gemini_client = "TEMP"
+from ..services.scheduler import cache
 
 # <---------- MySQL (TEMP) ---------->
 import pymysql
@@ -16,6 +15,12 @@ def get_conn() -> Connection:
         cursorclass=pymysql.cursors.DictCursor
     )
 
+# <---------- Def exceptions ---------->
+class UserNotFound(Exception): ...
+class InvalidUserData(Exception): ...
+class DatabaseError(Exception): ...
+class CacheMissError(Exception): ...
+
 # <---------- Build helpers ---------->
 import logging
 from typing import List, Optional
@@ -27,10 +32,6 @@ logger = logging.getLogger(__name__)
 def _log_exc(msg: str, user_id: str | None, exc: Exception) -> None:
     suffix = f" | user_id: {user_id}" if user_id else ""
     logger.error(f"{msg}{suffix}", exc_info=exc)
-
-class UserNotFound(Exception): ...
-class InvalidUserData(Exception): ...
-class DatabaseError(Exception): ...
 
 def load_user_credit(user_id: str) -> int:
     conn = get_conn()
@@ -75,6 +76,9 @@ def build_prompt(public_prompt: str, prompt: str, img_choices: str, note: Option
 
 def build_message(previous: List[PrevItem], message: Optional[str]) -> List[PrevItem]:
     return previous + [PrevItem(role="user", content=message)]
+
+def is_client_okay(client: any) -> bool:
+    return False if client is None else True
 
 # <---------- Flows ---------->
 from .exceptions import AppError
@@ -134,13 +138,22 @@ def build_message_flow(previous: List[PrevItem], message: Optional[str]) -> List
 def send_message_flow(model: str, message_input: List[PrevItem], prompt_input: str) -> Response:
     try:
         if model == 'gpt':
+            gpt_client = cache.get("gpt_client")
+            if not is_client_okay(gpt_client):
+                raise CacheMissError
             response = gpt_5_mini_send_message(gpt_client, message_input, prompt_input)
         elif model == 'gemini':
+            gemini_client = cache.get("gemini_client")
+            if not is_client_okay(gemini_client):
+                raise CacheMissError
             response = gemini_send_message(gemini_client, message_input, prompt_input)
         else:
             raise AppError("Wrong AI model", 400)
         response = Response(**response)
         return response
+    except CacheMissError as e:
+        _log_exc("Cache is missing | Client not found", None, e)
+        raise AppError(f"{model} client not initialized", 502) from e
     except Exception as e:
         _log_exc("Upstream model error | Cannot get response", None, e)
         raise AppError(f"Could not get response from {model}", 502) from e
