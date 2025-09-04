@@ -137,20 +137,21 @@ def build_message_flow(previous: List[PrevItem], message: Optional[str]) -> List
 
 def send_message_flow(model: str, message_input: List[PrevItem], prompt_input: str) -> Response:
     try:
-        if model == 'gpt':
-            gpt_client = cache.get("gpt_client")
-            if not is_client_okay(gpt_client):
-                raise CacheMissError
-            response = gpt_5_mini_send_message(gpt_client, message_input, prompt_input)
-        elif model == 'gemini':
-            gemini_client = cache.get("gemini_client")
-            if not is_client_okay(gemini_client):
-                raise CacheMissError
-            response = gemini_send_message(gemini_client, message_input, prompt_input)
-        else:
+        handlers = {
+            "gpt": (cache.get("gpt_client"), gpt_5_mini_send_message),
+            "gemini": (cache.get("gemini_client"), gemini_send_message),
+        }
+
+        if model not in handlers:
             raise AppError("Wrong AI model", 400)
-        response = Response(**response)
-        return response
+
+        client, send_func = handlers[model]
+
+        if not is_client_okay(client):
+            raise CacheMissError(f"{model} client not found in cache")
+
+        raw = send_func(client, message_input, prompt_input)
+        return Response(**raw)
     except CacheMissError as e:
         _log_exc("Cache is missing | Client not found", None, e)
         raise AppError(f"{model} client not initialized", 502) from e
