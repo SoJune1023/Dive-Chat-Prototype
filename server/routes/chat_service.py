@@ -47,12 +47,16 @@ def load_user_credit(user_id: str) -> int:
                 text("SELECT credit FROM users WHERE id = :id"),
                 {"id": user_id}
             ).mappings().first()
+
             if row is None:
                 raise UserNotFound("User not found")
-            credit = row.get("credit")
+
+            credit = row["credit"]  # RowMapping은 dict처럼 인덱싱 가능
+
             if credit is None:
                 raise InvalidUserData("Invalid user data")
-            return credit
+
+            return int(credit)
     except (UserNotFound, InvalidUserData):
         raise
     except Exception as e:
