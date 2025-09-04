@@ -51,7 +51,7 @@ def load_user_credit(user_id: str) -> int:
     finally:
         try:
             conn.close()
-        except Exception:
+        except Exception as e:
             _log_exc("PyMySQL error | Cannot close connection", None, e)
 
 def check_user_credit(user_credit: int, max_credit: int) -> bool:
@@ -73,7 +73,7 @@ def build_prompt(public_prompt: str, prompt: str, img_choices: str, note: Option
         parts.extend(["Select one of the following images:", img_choices.strip()])
     return "\n".join(p for p in parts if p)
 
-def build_message(previous: List[PrevItem], message: str) -> List[PrevItem]:
+def build_message(previous: List[PrevItem], message: Optional[str]) -> List[PrevItem]:
     return previous + [PrevItem(role="user", content=message)]
 
 # <---------- Flows ---------->
@@ -114,7 +114,7 @@ def credit_system_flow(user_id: str, max_credit: int) -> None:
         _log_exc("Database error | Cannot loading user_credit", user_id, e) # DatabaseError는 매우 큰 Error -> log 남김
         raise AppError("Database error", 500) from e
 
-def build_prompt_flow(img_list: List[ImgItem], public_prompt: str, prompt: str, note: str) -> str:
+def build_prompt_flow(img_list: Optional[List[ImgItem]], public_prompt: str, prompt: str, note: Optional[str]) -> str:
     try:
         img_choices = build_img_choices(img_list)
         prompt_input = build_prompt(public_prompt, prompt, img_choices, note)
