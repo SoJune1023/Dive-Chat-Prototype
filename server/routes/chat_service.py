@@ -51,7 +51,7 @@ def load_user_credit(user_id: str) -> int:
             if row is None:
                 raise UserNotFound("User not found")
 
-            credit = row["credit"]  # RowMapping은 dict처럼 인덱싱 가능
+            credit = row["credit"]
 
             if credit is None:
                 raise InvalidUserData("Invalid user data")
