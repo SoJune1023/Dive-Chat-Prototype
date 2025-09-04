@@ -78,11 +78,18 @@ def build_message(previous: List[PrevItem], message: Optional[str]) -> List[Prev
     return previous + [PrevItem(role="user", content=message)]
 
 def is_client_okay(client: any) -> bool:
-    return False if client is None else True
+    return client is not None
+
+# <---------- Def handlers ---------->
+from ..services import gpt_5_mini_send_message, gemini_send_message
+
+HANDLERS = {
+    "gpt": ("gpt_client", gpt_5_mini_send_message),
+    "gemini": ("gemini_client", gemini_send_message),
+}
 
 # <---------- Flows ---------->
 from .exceptions import AppError
-from ..services import gpt_5_mini_send_message, gemini_send_message
 
 def payload_system_flow(req: Payload) -> tuple[str, str, Optional[str], Optional[str], int, List[PrevItem],str, str, Optional[List[ImgItem]]]:
     try:
@@ -137,15 +144,11 @@ def build_message_flow(previous: List[PrevItem], message: Optional[str]) -> List
 
 def send_message_flow(model: str, message_input: List[PrevItem], prompt_input: str) -> Response:
     try:
-        handlers = {
-            "gpt": (cache.get("gpt_client"), gpt_5_mini_send_message),
-            "gemini": (cache.get("gemini_client"), gemini_send_message),
-        }
-
-        if model not in handlers:
+        if model not in HANDLERS:
             raise AppError("Wrong AI model", 400)
 
-        client, send_func = handlers[model]
+        cache_key, send_func = HANDLERS[model]
+        client = cache.get(cache_key)
 
         if not is_client_okay(client):
             raise CacheMissError(f"{model} client not found in cache")
@@ -155,6 +158,8 @@ def send_message_flow(model: str, message_input: List[PrevItem], prompt_input: s
     except CacheMissError as e:
         _log_exc("Cache is missing | Client not found", None, e)
         raise AppError(f"{model} client not initialized", 502) from e
+    except AppError:
+        raise
     except Exception as e:
         _log_exc("Upstream model error | Cannot get response", None, e)
         raise AppError(f"Could not get response from {model}", 502) from e
@@ -167,7 +172,7 @@ def handle(req: Payload) -> tuple[bool, int, dict]:
         prompt_input = build_prompt_flow(img_list, public_prompt, prompt, note)
         message_input = build_message_flow(previous, message)
         response = send_message_flow(model, message_input, prompt_input)
-        return True, 200, {"conversation": response.conversation, "image_selected": response.image_selected}
+        return True, 200, response.model_dump()
     except AppError as e:
         return False, e.http_status, e.to_dict()
     except Exception as e:
