@@ -1,19 +1,33 @@
-# <---------- Caching (TEMP) ---------->
+# <---------- Caching ---------->
 from ..services.scheduler import cache
 
-# <---------- MySQL (TEMP) ---------->
-import pymysql
-from pymysql.connections import Connection
+# <---------- Logging ---------->
+import logging
+
+logger = logging.getLogger(__name__)
+
+def _log_exc(msg: str, user_id: str | None, exc: Exception) -> None:
+    suffix = f" | user_id: {user_id}" if user_id else ""
+    logger.error(f"{msg}{suffix}", exc_info=exc)
+
+# <---------- MySQL ---------->
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import Engine, Connection
+
+engine: Engine = create_engine(
+    "mysql+pymysql://user:passws@localhost/db",
+    pool_size=10,
+    max_overflow=20,
+    pool_recycle=1800,
+    pool_pre_ping=True
+)
 
 def get_conn() -> Connection:
-    return pymysql.connect(
-        host='localhost',
-        user='user',
-        password='passws',
-        database='db',
-        charset='utf8mb4',
-        cursorclass=pymysql.cursors.DictCursor
-    )
+    try:
+        return engine.connect()
+    except Exception as e:
+        logger.error("Failed to get DB connection", exc_info=e)
+        raise
 
 # <---------- Def exceptions ---------->
 class UserNotFound(Exception): ...
@@ -22,23 +36,17 @@ class DatabaseError(Exception): ...
 class CacheMissError(Exception): ...
 
 # <---------- Build helpers ---------->
-import logging
 from typing import List, Optional
 from pydantic import ValidationError
 from schemas import Payload, PrevItem, ImgItem, Response
 
-logger = logging.getLogger(__name__)
-
-def _log_exc(msg: str, user_id: str | None, exc: Exception) -> None:
-    suffix = f" | user_id: {user_id}" if user_id else ""
-    logger.error(f"{msg}{suffix}", exc_info=exc)
-
 def load_user_credit(user_id: str) -> int:
-    conn = get_conn()
     try:
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT credit FROM users WHERE id = %s", (user_id,))
-            row = cursor.fetchone()
+        with get_conn() as conn:
+            row = conn.execute(
+                text("SELECT credit FROM users WHERE id = :id"),
+                {"id": user_id}
+            ).mappings().first()
             if row is None:
                 raise UserNotFound("User not found")
             credit = row.get("credit")
@@ -49,11 +57,6 @@ def load_user_credit(user_id: str) -> int:
         raise
     except Exception as e:
         raise DatabaseError("Database error") from e
-    finally:
-        try:
-            conn.close()
-        except Exception as e:
-            _log_exc("PyMySQL error | Cannot close connection", None, e)
 
 def check_user_credit(user_credit: int, max_credit: int) -> bool:
     return user_credit >= max_credit
