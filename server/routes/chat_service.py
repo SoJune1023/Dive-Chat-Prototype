@@ -165,8 +165,6 @@ def send_message_flow(model: str, message_input: List[PrevItem], prompt_input: s
     except CacheMissError as e:
         _log_exc("Cache is missing | Client not found", None, e)
         raise AppError(f"{model} client not initialized", 502) from e
-    except AppError:
-        raise
     except Exception as e:
         _log_exc("Upstream model error | Cannot get response", None, e)
         raise AppError(f"Could not get response from {model}", 502) from e
