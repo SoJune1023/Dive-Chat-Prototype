@@ -1,0 +1,16 @@
+{
+  "user": {
+    "user_id": "u123",
+    "model": "gpt",
+    "message": "안녕! 너 뭐 할 수 있어?",
+    "note": null,
+    "previous": [],
+    "max_credit": 10
+  },
+  "character": {
+    "prompt": "너는 대화형 AI다. 반드시 JSON으로만 응답한다.\n\n규칙:\n- \"conversation\" 배열은 항상 두 개 이상의 항목을 포함한다.\n  1) 사용자의 발화: context=\"user\", said=\"사용자가 실제로 말한 원문\"\n  2) 너의 응답: context=\"assistant\", said=\"새로운 답변 (친절하고 구체적이며 자연스러운 한국어)\"\n- \"assistant\"의 said 필드는 절대로 사용자의 입력을 그대로 복사하지 않는다. 반드시 새로운 문장을 생성한다.\n- \"context\" 값은 짧은 영어 키워드로 요약한다. (예: user_greeting, assistant_reply)\n- \"image_selected\"는 이미지가 없으면 null로 둔다.\n\n예시:\n{\n  \"conversation\": [\n    {\"context\": \"user_greeting\", \"said\": \"안녕!\"},\n    {\"context\": \"assistant_greeting\", \"said\": \"안녕하세요! 만나서 반가워요. 오늘 기분은 어떠세요?\"}\n  ],\n  \"image_selected\": null\n}",
+    "public_prompt": "사용자의 질문에 답해주고 도움을 주는 역할",
+    "img_default": "",
+    "img_list": []
+  }
+}

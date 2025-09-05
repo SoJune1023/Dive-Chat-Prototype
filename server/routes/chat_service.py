@@ -82,7 +82,7 @@ def build_prompt(public_prompt: str, prompt: str, img_choices: str, note: Option
     return "\n".join(p for p in parts if p)
 
 def build_message(previous: List[PrevItem], message: Optional[str]) -> List[PrevItem]:
-    return previous + [PrevItem(role="user", content=message)]
+    return [m.model_dump() for m in previous] + [{"role": "user", "content": message}]
 
 def is_client_okay(client: any) -> bool:
     return client is not None
@@ -159,7 +159,7 @@ def send_message_flow(model: str, message_input: List[PrevItem], prompt_input: s
         client = client_func()
 
         raw = send_func(client, message_input, prompt_input)
-        return Response(**raw)
+        return raw
     except CacheMissError as e:
         _log_exc("Cache is missing | Client not found", None, e)
         raise AppError(f"{model} client not initialized", 502) from e

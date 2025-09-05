@@ -8,4 +8,4 @@ class MessageItem(BaseModel):
 
 class Response(BaseModel):
     conversation: List[MessageItem]
-    image_selected: HttpUrl
+    image_selected: str

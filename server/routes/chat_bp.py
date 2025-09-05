@@ -9,4 +9,4 @@ chat_bp = Blueprint('chat_bp', __name__)
 def onSend():
     req = Payload(**request.get_json(force=True))
     ok, code, body = handle(req)
-    return jsonify(body), code
+    return body, code
