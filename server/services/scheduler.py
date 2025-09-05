@@ -1,6 +1,6 @@
 from apscheduler.schedulers.background import BackgroundScheduler
-from gpt import gpt_setup_client
-from Gemini import gemini_setup_client
+from .gpt import gpt_setup_client
+from .Gemini import gemini_setup_client
 from flask_caching import Cache
 
 cache = Cache()
