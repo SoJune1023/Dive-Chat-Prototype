@@ -14,7 +14,6 @@ def gemini_setup_client() -> genai.Client:
 
 # ---- Helpers ----
 def _to_genai_contents(message_input: List[dict]) -> List[types.Content]:
-    """OpenAI 스타일 message_input(dict) → Gemini Content 객체 배열 변환"""
     contents: List[types.Content] = []
     for m in message_input:
         role = m.get("role", "user")
