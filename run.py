@@ -11,7 +11,6 @@ logging.basicConfig(
     force=True,   # ← 중요! 기존 핸들러 싹 리셋 후 재설정
 )
 
-import logging
 logger = logging.getLogger(__name__)
 
 from server.main import create_app
