@@ -53,8 +53,8 @@ def gemini_send_message(
     top_p: float = 1.0,
     max_output_tokens: int = 1024,
     seed: Optional[int] = None,
-    extra_headers: Optional[Dict[str, str]] = None,         # 지원 시 그대로 전달
-    timeout: Optional[int] = None,                          # 지원 시 request_options로 전달
+    extra_headers: Optional[Dict[str, str]] = None,
+    timeout: Optional[int] = None,
     stream: bool = False,
 ) -> Union[Response, types.GenerateContentResponse, Iterable[types.GenerateContentResponseChunk]]:
     contents = _to_genai_contents(message_input)
