@@ -6,7 +6,7 @@ from google import genai
 from google.genai import types
 from schemas.ai_response import Response
 
-from config import GEMINI_API_KEY
+from ..config import GEMINI_API_KEY
 
 # ---- Client ----
 def gemini_setup_client() -> genai.Client:
@@ -57,7 +57,7 @@ def gemini_send_message(
     extra_headers: Optional[Dict[str, str]] = None,
     timeout: Optional[int] = None,
     stream: bool = False,
-) -> Union[Response, types.GenerateContentResponse, Iterable[types.GenerateContentResponseChunk]]:
+) -> Response:
     contents = _to_genai_contents(message_input)
     config = _build_config(
         prompt_input=prompt_input,
@@ -74,11 +74,20 @@ def gemini_send_message(
         request_kwargs["request_options"] = {"timeout": timeout}
 
     if stream:
-        return client.models.generate_content(stream=True, **request_kwargs)
+        # 스트리밍 모드: 청크 모아서 최종 텍스트 생성
+        stream_resp = client.models.generate_content(stream=True, **request_kwargs)
+        full_text = ""
+        for chunk in stream_resp:
+            if chunk.text:
+                full_text += chunk.text
+        try:
+            return Response.model_validate(json.loads(full_text))
+        except Exception:
+            raise ValueError(f"Failed to parse stream response into Response: {full_text}")
 
+    # non-stream 모드
     resp = client.models.generate_content(**request_kwargs)
-
     try:
         return Response.model_validate(json.loads(resp.text))
     except Exception:
-        return resp
+        raise ValueError(f"Failed to parse response into Response: {resp.text}")

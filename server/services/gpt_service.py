@@ -4,7 +4,7 @@ from typing import List, Optional, Dict, Any
 from openai import OpenAI
 from schemas.ai_response import Response  # Pydantic schema
 
-from config import OPENAI_API_KEY
+from ..config import OPENAI_API_KEY
 
 # ---- Client ----
 def gpt_setup_client() -> OpenAI:
