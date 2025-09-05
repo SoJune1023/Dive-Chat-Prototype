@@ -4,10 +4,12 @@ from typing import List, Optional, Dict, Any
 from openai import OpenAI
 from schemas.ai_response import Response  # Pydantic schema
 
+from config import OPENAI_API_KEY
+
 # ---- Client ----
 def gpt_setup_client() -> OpenAI:
     return OpenAI(
-        api_key=os.getenv("OPENAI_API_KEY"),
+        api_key=os.getenv(OPENAI_API_KEY),
         max_retries=3,
         timeout=30,
     )

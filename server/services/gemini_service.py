@@ -6,10 +6,12 @@ from google import genai
 from google.genai import types
 from schemas.ai_response import Response
 
+from config import GEMINI_API_KEY
+
 # ---- Client ----
 def gemini_setup_client() -> genai.Client:
     return genai.Client(
-        api_key=os.getenv("GEMINI_API_KEY")
+        api_key=os.getenv(GEMINI_API_KEY)
     )
 
 # ---- Helpers ----
@@ -47,7 +49,7 @@ def gemini_send_message(
     message_input: List[dict],
     prompt_input: str,
     *,
-    model: str = "gemini-1.5-pro-latest",
+    model: str = "gemini-2.0-flash",
     temperature: float = 0.7,
     top_p: float = 1.0,
     max_output_tokens: int = 1024,
