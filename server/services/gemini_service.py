@@ -11,7 +11,7 @@ from ..config import GEMINI_API_KEY
 # ---- Client ----
 def gemini_setup_client() -> genai.Client:
     return genai.Client(
-        api_key=os.getenv(GEMINI_API_KEY)
+        api_key=os.getenv("GEMINI_API_KEY")
     )
 
 # ---- Helpers ----

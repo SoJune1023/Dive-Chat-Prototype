@@ -1,5 +1,5 @@
 # <---------- Caching ---------->
-from ..services.scheduler import cache
+# from ..services.scheduler import cache
 
 # <---------- Logging ---------->
 import logging
@@ -88,11 +88,11 @@ def is_client_okay(client: any) -> bool:
     return client is not None
 
 # <---------- Def handlers ---------->
-from ..services import gpt_5_mini_send_message, gemini_send_message
+from ..services import gpt_5_mini_send_message, gemini_send_message, gpt_setup_client, gemini_setup_client
 
 HANDLERS = {
-    "gpt": ("gpt_client", gpt_5_mini_send_message),
-    "gemini": ("gemini_client", gemini_send_message),
+    "gpt": (gpt_setup_client, gpt_5_mini_send_message),
+    "gemini": (gemini_setup_client, gemini_send_message),
 }
 
 # <---------- Flows ---------->
@@ -154,11 +154,9 @@ def send_message_flow(model: str, message_input: List[PrevItem], prompt_input: s
         if model not in HANDLERS:
             raise AppError("Wrong AI model", 400)
 
-        cache_key, send_func = HANDLERS[model]
-        client = cache.get(cache_key)
+        client_func, send_func = HANDLERS[model]
 
-        if not is_client_okay(client):
-            raise CacheMissError(f"{model} client not found in cache")
+        client = client_func()
 
         raw = send_func(client, message_input, prompt_input)
         return Response(**raw)
@@ -173,7 +171,7 @@ def send_message_flow(model: str, message_input: List[PrevItem], prompt_input: s
 def handle(req: Payload) -> tuple[bool, int, dict]:
     try:
         user_id, model, message, note, max_credit, previous, prompt, public_prompt, img_list = payload_system_flow(req)
-        credit_system_flow(user_id, max_credit)
+        # credit_system_flow(user_id, max_credit)
         prompt_input = build_prompt_flow(img_list, public_prompt, prompt, note)
         message_input = build_message_flow(previous, message)
         response = send_message_flow(model, message_input, prompt_input)
