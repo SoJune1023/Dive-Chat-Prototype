@@ -6,8 +6,9 @@ from openai import OpenAI
 from schemas.ai_response import Response as RespModel  # Pydantic schema
 
 from ..config import OPENAI_API_KEY
+from ..config import GPT_MINI_MODEL
 
-# ---- Client ----
+# <---------- Client ---------->
 def gpt_setup_client() -> instructor:
     return instructor.from_openai(
         client=OpenAI(
@@ -17,17 +18,16 @@ def gpt_setup_client() -> instructor:
         )
     )
 
-# ---- Request ----
+# <---------- Request ---------->
 
 def gpt_5_mini_send_message(
     client: instructor.Instructor,
     message_input: List[dict],
     prompt_input: str,
     *,
-    model: str = "gpt-5-mini-2025-08-07",
+    model: str = "GPT_MINI_MODEL",
     extra_headers: Optional[Dict[str, str]] = None,
 ) -> RespModel:
-    # Idempotency header
     headers = {"Idempotency-Key": str(uuid.uuid4())}
     if extra_headers:
         headers.update(extra_headers)
