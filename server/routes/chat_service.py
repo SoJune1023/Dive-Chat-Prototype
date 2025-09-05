@@ -115,9 +115,9 @@ def payload_system_flow(req: Payload) -> tuple[str, str, Optional[str], Optional
             character.img_list if character.img_list else None # Optional[List[ImgItem]]
         )
     except ValidationError as e:
-        raise AppError("Payload system: Wrong payload", 400) from e
+        raise AppError("Payload system error | Wrong payload", 400) from e
     except Exception as e:
-        raise Exception("Payload system: Unexpected error", 500) from e
+        raise Exception("Payload system error | Unexpected error", 500) from e
 
 def credit_system_flow(user_id: str, max_credit: int) -> None:
     try:
@@ -125,9 +125,9 @@ def credit_system_flow(user_id: str, max_credit: int) -> None:
         if not check_user_credit(user_credit, max_credit):
             raise AppError("Out of credit", 403)
     except UserNotFound as e:
-        raise AppError("Credit system: User not found", 404) from e
+        raise AppError("Credit system error | User not found", 404) from e
     except InvalidUserData as e:
-        raise AppError("Credit system: Invalid user data", 500) from e
+        raise AppError("Credit system error | Invalid user data", 500) from e
     except DatabaseError as e:
         _log_exc("Database error | Cannot loading user_credit", user_id, e) # DatabaseError는 매우 큰 Error -> log 남김
         raise AppError("Database error", 500) from e
