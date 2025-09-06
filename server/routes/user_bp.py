@@ -34,12 +34,8 @@ class UserInfo(BaseModel):
     phone: str
     password: str
 
-class UserData(BaseModel):
-    credit: int
-
 class RegisterPayload(BaseModel):
     user_info: UserInfo
-    user_data: UserData
 
 class SigninPayload(BaseModel):
     imail: str
