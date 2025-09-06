@@ -8,7 +8,7 @@ def _log_exc(msg: str, user_id: str | None, exc: Exception) -> None:
     logger.error(f"{msg}{suffix}", exc_info=exc)
 
 # <---------- MySQL ---------->
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine, Connection
 
 engine: Engine = create_engine(
