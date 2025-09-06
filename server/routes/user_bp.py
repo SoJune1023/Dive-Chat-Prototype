@@ -59,7 +59,7 @@ def registerHandle(req: RegisterPayload):
     try:
         imail, phone, password = register_get_payload_flow(req)
     except AppError as e:
-        return False, e.http_status, e.to_dict
+        return False, e.http_status, e.to_dict()
 
 def signinHandle(req: SigninPayload): ...
 
