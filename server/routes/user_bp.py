@@ -63,10 +63,16 @@ def register_get_payload_flow(payload: RegisterPayload) -> tuple[str, str, str]:
     )
 
 def set_user_id_flow(email: str, phone: str) -> str:
-    normed = norm_email(email) + norm_phone(phone)
-    # TODO: 랜덤 arg 추가 후 encoding
-    # TODO: return
-    pass
+    try:
+        normed = norm_email(email) + norm_phone(phone)
+        # TODO: 랜덤 arg 추가 후 encoding
+        # TODO: return
+        pass
+    except AppError as e:
+        raise AppError("Cannot set user_id", 500) from e
+    except Exception as e:
+        _log_exc("Error while set user_id | Unexcepted error", None, e)
+        raise AppError("Unexcepted error", 500) from e
 
 # <---------- Handles ---------->
 def registerHandle(req: RegisterPayload):
