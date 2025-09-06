@@ -1,3 +1,15 @@
+# <---------- Payloads ---------->
+from pydantic import BaseModel
+
+class RegisterPayload(BaseModel): ...
+
+class SigninPayload(BaseModel): ...
+
+# <---------- Handles ---------->
+def registerHandle(req: RegisterPayload): ...
+
+def signinHandle(req: SigninPayload): ...
+
 # <---------- Route ---------->
 from flask import Blueprint, jsonify, request
 
