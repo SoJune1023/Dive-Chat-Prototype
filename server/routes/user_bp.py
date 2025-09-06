@@ -92,7 +92,6 @@ def _register_is_payload_okay_flow(email: str, phone: str, password: str):
 
 def _register_set_user_id_flow(email: str, phone: str) -> str:
     try:
-        normed = _norm_email(email) + _norm_phone(phone)
         # TODO: 랜덤 arg 추가 후 encoding
         # TODO: return
         pass
