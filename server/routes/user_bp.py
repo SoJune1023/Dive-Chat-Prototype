@@ -45,16 +45,16 @@ class SigninPayload(BaseModel):
 import re
 import unicodedata
 
-def norm_email(email: str) -> str:
+def _norm_email(email: str) -> str:
     return unicodedata.normalize("NFKC", email).strip().lower()
 
-def norm_phone(phone: str) -> str:
+def _norm_phone(phone: str) -> str:
     return re.sub(r"\D+", "", unicodedata.normalize("NFKC", phone))
 
 # <---------- Flows ---------->
 from .exceptions import AppError
 
-def register_get_payload_flow(payload: RegisterPayload) -> tuple[str, str, str]:
+def _register_get_payload_flow(payload: RegisterPayload) -> tuple[str, str, str]:
     user_info = payload.user_info
     return(
         user_info.email,
@@ -62,15 +62,15 @@ def register_get_payload_flow(payload: RegisterPayload) -> tuple[str, str, str]:
         user_info.password
     )
 
-def register_is_payload_okay_flow(email: str, phone: str, password: str):
+def _register_is_payload_okay_flow(email: str, phone: str, password: str):
     # TODO: email 검증
     # TODO: phone 검증
     # TODO: password 검증
     pass
 
-def register_set_user_id_flow(email: str, phone: str) -> str:
+def _register_set_user_id_flow(email: str, phone: str) -> str:
     try:
-        normed = norm_email(email) + norm_phone(phone)
+        normed = _norm_email(email) + _norm_phone(phone)
         # TODO: 랜덤 arg 추가 후 encoding
         # TODO: return
         pass
@@ -81,13 +81,13 @@ def register_set_user_id_flow(email: str, phone: str) -> str:
         raise AppError("Unexcepted error", 500) from e
 
 # <---------- Handles ---------->
-def registerHandle(req: RegisterPayload):
+def _registerHandle(req: RegisterPayload):
     try:
-        email, phone, password = register_get_payload_flow(req)
+        email, phone, password = _register_get_payload_flow(req)
     except AppError as e:
         return False, e.http_status, e.to_dict()
 
-def signinHandle(req: SigninPayload): ...
+def _signinHandle(req: SigninPayload): ...
 
 # <---------- Route ---------->
 from flask import Blueprint, request
@@ -97,11 +97,11 @@ user_bp = Blueprint('user_bp', __name__)
 @user_bp.route('/register', methods = ['POST'])
 def register():
     req = RegisterPayload(**request.get_json(force=True))
-    ok, code, body = registerHandle(req)
+    ok, code, body = _registerHandle(req)
     return body, code
 
 @user_bp.route('/signin', methods = ['POST'])
 def signin():
     req = SigninPayload(**request.get_json(force=True))
-    ok, code, body = signinHandle(req)
+    ok, code, body = _signinHandle(req)
     return body, code
