@@ -33,7 +33,6 @@ class UserInfo(BaseModel):
     imail: str
     phone: str
     password: str
-    user_id: str
 
 class UserData(BaseModel):
     credit: int
@@ -45,6 +44,17 @@ class RegisterPayload(BaseModel):
 class SigninPayload(BaseModel):
     imail: str
     password: str
+
+# <---------- Helpers ---------->
+def register_get_payload(payload: RegisterPayload):
+    user_info = payload.user_info
+    
+    return(
+        user_info.imail,
+        user_info.phone,
+        user_info.password,
+        user_info.user_id,
+    )
 
 # <---------- Handles ---------->
 def registerHandle(req: RegisterPayload): ...
