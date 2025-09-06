@@ -113,6 +113,8 @@ def _registerHandle(req: RegisterPayload):
     try:
         raw_email, raw_phone, raw_password = _register_get_payload_flow(req)
         email, phone, password = _register_payload_norm_flow(raw_email, raw_phone, raw_password)
+    except ClientError as e:
+        return False, e.http_status, e.to_dict()
     except AppError as e:
         return False, e.http_status, e.to_dict()
 
