@@ -42,6 +42,9 @@ class SigninPayload(BaseModel):
     password: str
 
 # <---------- Helpers ---------->
+def norm_email(email: str) -> str: ...
+
+def norm_phone(phone: str) -> str: ...
 
 # <---------- Flows ---------->
 from .exceptions import AppError
@@ -55,7 +58,7 @@ def register_get_payload_flow(payload: RegisterPayload) -> tuple[str, str, str]:
     )
 
 def set_user_id_flow(email: str, phone: str) -> str:
-    # TODO: email 및 phone 일반화
+    will_encoding_string = norm_email(email) + norm_phone(phone)
     # TODO: 랜덤 arg 추가 후 encoding
     # TODO: return
     pass
