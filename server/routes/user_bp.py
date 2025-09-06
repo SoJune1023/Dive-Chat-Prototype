@@ -30,7 +30,7 @@ def get_conn() -> Connection:
 from pydantic import BaseModel
 
 class UserInfo(BaseModel):
-    imail: str
+    email: str
     phone: str
     password: str
 
@@ -49,15 +49,21 @@ from .exceptions import AppError
 def register_get_payload_flow(payload: RegisterPayload) -> tuple[str, str, str]:
     user_info = payload.user_info
     return(
-        user_info.imail,
+        user_info.email,
         user_info.phone,
         user_info.password
     )
 
+def set_user_id_flow(email: str, phone: str) -> str:
+    # TODO: imail 및 phone 일반화
+    # TODO: 랜덤 arg 추가 후 encoding
+    # TODO: return
+    pass
+
 # <---------- Handles ---------->
 def registerHandle(req: RegisterPayload):
     try:
-        imail, phone, password = register_get_payload_flow(req)
+        email, phone, password = register_get_payload_flow(req)
     except AppError as e:
         return False, e.http_status, e.to_dict()
 
