@@ -41,15 +41,37 @@ class SigninPayload(BaseModel):
     imail: str
     password: str
 
-# <---------- Helpers ---------->
+# <---------- Password policy ---------->
 import re
-import unicodedata
 
-def _norm_email(email: str) -> str:
-    return unicodedata.normalize("NFKC", email).strip().lower()
+PASSWORD_RE = re.compile(
+    r"^(?=.*\d)(?=.*[A-Z])(?=.*[a-z])(?=.*[!@#$%^&*()])[A-Za-z\d!@#$%^&*()]{8,}$"
+)
 
-def _norm_phone(phone: str) -> str:
-    return re.sub(r"\D+", "", unicodedata.normalize("NFKC", phone))
+# <---------- Helpers ---------->
+import phonenumbers
+from phonenumbers import PhoneNumberFormat
+from typing import Tuple, Optional
+from email_validator import validate_email
+
+def _norm_email(raw_email: str) -> Tuple[bool, Optional[str], Optional[str]]:
+    raw = raw_email.strip().lower()
+    email = validate_email(raw, check_deliverability=False)
+    return email.email
+
+def _norm_phone(raw_phone: str, default_region: str = "KR") -> str:
+    raw = raw_phone.strip()
+    num = phonenumbers.parse(raw, None if raw.startswith("+") else default_region)
+
+    if not phonenumbers.is_possible_number(num) or not phonenumbers.is_valid_number(num):
+        raise ValueError("Invalid phone number format")
+
+    return phonenumbers.format_number(num, PhoneNumberFormat.E164)
+
+def _norm_password(raw_password: str) -> str:
+    if not PASSWORD_RE.fullmatch(raw_password):
+        raise ValueError("Invalid password format")
+    return raw_password
 
 # <---------- Flows ---------->
 from .exceptions import AppError
