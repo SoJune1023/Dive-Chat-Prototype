@@ -42,9 +42,14 @@ class SigninPayload(BaseModel):
     password: str
 
 # <---------- Helpers ---------->
-def norm_email(email: str) -> str: ...
+import re
+import unicodedata
 
-def norm_phone(phone: str) -> str: ...
+def norm_email(email: str) -> str:
+    return unicodedata.normalize("NFKC", email).strip().lower()
+
+def norm_phone(phone: str) -> str:
+    return re.sub(r"\D+", "", unicodedata.normalize("NFKC", phone))
 
 # <---------- Flows ---------->
 from .exceptions import AppError
@@ -58,7 +63,7 @@ def register_get_payload_flow(payload: RegisterPayload) -> tuple[str, str, str]:
     )
 
 def set_user_id_flow(email: str, phone: str) -> str:
-    will_encoding_string = norm_email(email) + norm_phone(phone)
+    normed = norm_email(email) + norm_phone(phone)
     # TODO: 랜덤 arg 추가 후 encoding
     # TODO: return
     pass
