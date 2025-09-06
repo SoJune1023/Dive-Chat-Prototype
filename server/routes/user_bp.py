@@ -62,6 +62,12 @@ def register_get_payload_flow(payload: RegisterPayload) -> tuple[str, str, str]:
         user_info.password
     )
 
+def register_is_payload_okay_flow(email: str, phone: str, password: str):
+    # TODO: email 검증
+    # TODO: phone 검증
+    # TODO: password 검증
+    pass
+
 def register_set_user_id_flow(email: str, phone: str) -> str:
     try:
         normed = norm_email(email) + norm_phone(phone)
