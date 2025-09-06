@@ -22,7 +22,7 @@ engine: Engine = create_engine(
     pool_pre_ping=True
 )
 
-def get_conn() -> Connection:
+def _get_conn() -> Connection:
     try:
         return engine.connect()
     except Exception as e:
@@ -40,9 +40,9 @@ from typing import List, Optional
 from pydantic import ValidationError
 from schemas import Payload, PrevItem, ImgItem, Response
 
-def load_user_credit(user_id: str) -> int:
+def _load_user_credit(user_id: str) -> int:
     try:
-        with get_conn() as conn:
+        with _get_conn() as conn:
             row = conn.execute(
                 text("SELECT credit FROM users WHERE id = :id"),
                 {"id": user_id}
@@ -62,15 +62,15 @@ def load_user_credit(user_id: str) -> int:
     except Exception as e:
         raise DatabaseError("Database error") from e
 
-def check_user_credit(user_credit: int, max_credit: int) -> bool:
+def _check_user_credit(user_credit: int, max_credit: int) -> bool:
     return user_credit >= max_credit
 
-def build_img_choices(img_list: Optional[List[ImgItem]]) -> str:
+def _build_img_choices(img_list: Optional[List[ImgItem]]) -> str:
     if not img_list:
         return ""
     return "\n".join(f"{i.key}: {i.url}" for i in img_list)
 
-def build_prompt(public_prompt: str, prompt: str, img_choices: str, note: Optional[str]) -> str:
+def _build_prompt(public_prompt: str, prompt: str, img_choices: str, note: Optional[str]) -> str:
     parts = [
         (public_prompt or "").strip(),
         (prompt or "").strip(),
@@ -81,11 +81,8 @@ def build_prompt(public_prompt: str, prompt: str, img_choices: str, note: Option
         parts.extend(["Select one of the following images:", img_choices.strip()])
     return "\n".join(p for p in parts if p)
 
-def build_message(previous: List[PrevItem], message: Optional[str]) -> List[PrevItem]:
+def _build_message(previous: List[PrevItem], message: Optional[str]) -> List[PrevItem]:
     return [m.model_dump() for m in previous] + [{"role": "user", "content": message}]
-
-def is_client_okay(client: any) -> bool:
-    return client is not None
 
 # <---------- Def handlers ---------->
 from ..services import gpt_5_mini_send_message, gemini_send_message, gpt_setup_client, gemini_setup_client
@@ -98,7 +95,7 @@ HANDLERS = {
 # <---------- Flows ---------->
 from .exceptions import AppError
 
-def payload_system_flow(req: Payload) -> tuple[str, str, Optional[str], Optional[str], int, List[PrevItem],str, str, Optional[List[ImgItem]]]:
+def _payload_system_flow(req: Payload) -> tuple[str, str, Optional[str], Optional[str], int, List[PrevItem],str, str, Optional[List[ImgItem]]]:
     try:
         user = req.user
         character = req.character
@@ -119,10 +116,10 @@ def payload_system_flow(req: Payload) -> tuple[str, str, Optional[str], Optional
     except Exception as e:
         raise Exception("Payload system error | Unexpected error", 500) from e
 
-def credit_system_flow(user_id: str, max_credit: int) -> None:
+def _credit_system_flow(user_id: str, max_credit: int) -> None:
     try:
-        user_credit = load_user_credit(user_id)
-        if not check_user_credit(user_credit, max_credit):
+        user_credit = _load_user_credit(user_id)
+        if not _check_user_credit(user_credit, max_credit):
             raise AppError("Out of credit", 403)
     except UserNotFound as e:
         raise AppError("Credit system error | User not found", 404) from e
@@ -132,24 +129,24 @@ def credit_system_flow(user_id: str, max_credit: int) -> None:
         _log_exc("Database error | Cannot loading user_credit", user_id, e) # DatabaseError는 매우 큰 Error -> log 남김
         raise AppError("Database error", 500) from e
 
-def build_prompt_flow(img_list: Optional[List[ImgItem]], public_prompt: str, prompt: str, note: Optional[str]) -> str:
+def _build_prompt_flow(img_list: Optional[List[ImgItem]], public_prompt: str, prompt: str, note: Optional[str]) -> str:
     try:
-        img_choices = build_img_choices(img_list)
-        prompt_input = build_prompt(public_prompt, prompt, img_choices, note)
+        img_choices = _build_img_choices(img_list)
+        prompt_input = _build_prompt(public_prompt, prompt, img_choices, note)
         return prompt_input
     except Exception as e:
         _log_exc("Unexpected error | Could not build prompt_input or img_choices", None, e)
         raise AppError("Cannot build prompt", 500) from e
 
-def build_message_flow(previous: List[PrevItem], message: Optional[str]) -> List[PrevItem]:
+def _build_message_flow(previous: List[PrevItem], message: Optional[str]) -> List[PrevItem]:
     try:
-        message_input = build_message(previous, message)
+        message_input = _build_message(previous, message)
         return message_input
     except Exception as e:
         _log_exc(f"Unexpected error | Could not build message_input", None, e)
         raise AppError("Cannot build message", 500) from e
 
-def send_message_flow(model: str, message_input: List[PrevItem], prompt_input: str) -> Response:
+def _send_message_flow(model: str, message_input: List[PrevItem], prompt_input: str) -> Response:
     try:
         if model not in HANDLERS:
             raise AppError("Wrong AI model", 400)
@@ -168,13 +165,13 @@ def send_message_flow(model: str, message_input: List[PrevItem], prompt_input: s
         raise AppError(f"Could not get response from {model}", 502) from e
 
 # <---------- Handle ---------->
-def handle(req: Payload) -> tuple[bool, int, dict]:
+def _handle(req: Payload) -> tuple[bool, int, dict]:
     try:
-        user_id, model, message, note, max_credit, previous, prompt, public_prompt, img_list = payload_system_flow(req)
-        # credit_system_flow(user_id, max_credit)
-        prompt_input = build_prompt_flow(img_list, public_prompt, prompt, note)
-        message_input = build_message_flow(previous, message)
-        response = send_message_flow(model, message_input, prompt_input)
+        user_id, model, message, note, max_credit, previous, prompt, public_prompt, img_list = _payload_system_flow(req)
+        # _credit_system_flow(user_id, max_credit)
+        prompt_input = _build_prompt_flow(img_list, public_prompt, prompt, note)
+        message_input = _build_message_flow(previous, message)
+        response = _send_message_flow(model, message_input, prompt_input)
         return True, 200, response.model_dump()
     except AppError as e:
         return False, e.http_status, e.to_dict()
