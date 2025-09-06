@@ -56,7 +56,7 @@ from email_validator import validate_email
 
 from .exceptions import AppError, ClientError
 
-def _norm_email(raw_email: str) -> Tuple[bool, Optional[str], Optional[str]]:
+def _norm_email(raw_email: str) -> str:
     raw = raw_email.strip().lower()
     email = validate_email(raw, check_deliverability=False)
     return email.email
