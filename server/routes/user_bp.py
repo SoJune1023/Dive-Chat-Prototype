@@ -54,6 +54,8 @@ from phonenumbers import PhoneNumberFormat
 from typing import Tuple, Optional
 from email_validator import validate_email
 
+from .exceptions import AppError, ClientError
+
 def _norm_email(raw_email: str) -> Tuple[bool, Optional[str], Optional[str]]:
     raw = raw_email.strip().lower()
     email = validate_email(raw, check_deliverability=False)
@@ -64,18 +66,16 @@ def _norm_phone(raw_phone: str, default_region: str = "KR") -> str:
     num = phonenumbers.parse(raw, None if raw.startswith("+") else default_region)
 
     if not phonenumbers.is_possible_number(num) or not phonenumbers.is_valid_number(num):
-        raise ValueError("Invalid phone number format")
+        raise ClientError("Invalid phone number format", 400)
 
     return phonenumbers.format_number(num, PhoneNumberFormat.E164)
 
 def _norm_password(raw_password: str) -> str:
     if not PASSWORD_RE.fullmatch(raw_password):
-        raise ValueError("Invalid password format")
+        raise ClientError("Invalid password format", 400)
     return raw_password
 
 # <---------- Flows ---------->
-from .exceptions import AppError
-
 def _register_get_payload_flow(payload: RegisterPayload) -> tuple[str, str, str]:
     user_info = payload.user_info
     return(
@@ -84,11 +84,18 @@ def _register_get_payload_flow(payload: RegisterPayload) -> tuple[str, str, str]
         user_info.password
     )
 
-def _register_is_payload_okay_flow(email: str, phone: str, password: str):
-    # TODO: email 검증
-    # TODO: phone 검증
-    # TODO: password 검증
-    pass
+def _register_payload_norm_flow(raw_email: str, raw_phone: str, raw_password: str) -> tuple[str, str, str]:
+    try:
+        return(
+        _norm_email(raw_email),
+        _norm_phone(raw_phone),
+        _norm_password(raw_password)
+        )
+    except ClientError:
+        raise
+    except Exception as e:
+        _log_exc("Payload validate | Something went wrong")
+        raise Exception("Payload validate | Something went wrong") from e
 
 def _register_set_user_id_flow(email: str, phone: str) -> str:
     try:
@@ -104,7 +111,8 @@ def _register_set_user_id_flow(email: str, phone: str) -> str:
 # <---------- Handles ---------->
 def _registerHandle(req: RegisterPayload):
     try:
-        email, phone, password = _register_get_payload_flow(req)
+        raw_email, raw_phone, raw_password = _register_get_payload_flow(req)
+        email, phone, password = _register_payload_norm_flow(raw_email, raw_phone, raw_password)
     except AppError as e:
         return False, e.http_status, e.to_dict()
 
