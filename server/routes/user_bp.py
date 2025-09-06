@@ -11,7 +11,7 @@ def registerHandle(req: RegisterPayload): ...
 def signinHandle(req: SigninPayload): ...
 
 # <---------- Route ---------->
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, request
 
 user_bp = Blueprint('user_bp', __name__)
 
