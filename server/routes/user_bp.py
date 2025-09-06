@@ -55,7 +55,7 @@ def register_get_payload_flow(payload: RegisterPayload) -> tuple[str, str, str]:
     )
 
 def set_user_id_flow(email: str, phone: str) -> str:
-    # TODO: imail 및 phone 일반화
+    # TODO: email 및 phone 일반화
     # TODO: 랜덤 arg 추가 후 encoding
     # TODO: return
     pass
