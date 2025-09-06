@@ -42,7 +42,11 @@ class SigninPayload(BaseModel):
     password: str
 
 # <---------- Helpers ---------->
-def register_get_payload(payload: RegisterPayload) -> tuple[str, str, str]:
+
+# <---------- Flows ---------->
+from .exceptions import AppError
+
+def register_get_payload_flow(payload: RegisterPayload) -> tuple[str, str, str]:
     user_info = payload.user_info
     return(
         user_info.imail,
@@ -52,7 +56,10 @@ def register_get_payload(payload: RegisterPayload) -> tuple[str, str, str]:
 
 # <---------- Handles ---------->
 def registerHandle(req: RegisterPayload):
-    imail, phone, password = register_get_payload(req)
+    try:
+        imail, phone, password = register_get_payload_flow(req)
+    except AppError as e:
+        return False, e.http_status, e.to_dict
 
 def signinHandle(req: SigninPayload): ...
 
