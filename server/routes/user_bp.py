@@ -62,7 +62,7 @@ def register_get_payload_flow(payload: RegisterPayload) -> tuple[str, str, str]:
         user_info.password
     )
 
-def set_user_id_flow(email: str, phone: str) -> str:
+def register_set_user_id_flow(email: str, phone: str) -> str:
     try:
         normed = norm_email(email) + norm_phone(phone)
         # TODO: 랜덤 arg 추가 후 encoding
