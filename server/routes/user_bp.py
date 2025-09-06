@@ -42,18 +42,17 @@ class SigninPayload(BaseModel):
     password: str
 
 # <---------- Helpers ---------->
-def register_get_payload(payload: RegisterPayload):
+def register_get_payload(payload: RegisterPayload) -> tuple[str, str, str]:
     user_info = payload.user_info
-    
     return(
         user_info.imail,
         user_info.phone,
-        user_info.password,
-        user_info.user_id,
+        user_info.password
     )
 
 # <---------- Handles ---------->
-def registerHandle(req: RegisterPayload): ...
+def registerHandle(req: RegisterPayload):
+    imail, phone, password = register_get_payload(req)
 
 def signinHandle(req: SigninPayload): ...
 
