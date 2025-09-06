@@ -29,9 +29,22 @@ def get_conn() -> Connection:
 # <---------- Payloads ---------->
 from pydantic import BaseModel
 
-class RegisterPayload(BaseModel): ...
+class UserInfo(BaseModel):
+    imail: str
+    phone: str
+    password: str
+    user_id: str
 
-class SigninPayload(BaseModel): ...
+class UserData(BaseModel):
+    credit: int
+
+class RegisterPayload(BaseModel):
+    user_info: UserInfo
+    user_data: UserData
+
+class SigninPayload(BaseModel):
+    imail: str
+    password: str
 
 # <---------- Handles ---------->
 def registerHandle(req: RegisterPayload): ...
