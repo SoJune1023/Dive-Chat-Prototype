@@ -51,7 +51,6 @@ PASSWORD_RE = re.compile(
 # <---------- Helpers ---------->
 import phonenumbers
 from phonenumbers import PhoneNumberFormat
-from typing import Tuple, Optional
 from email_validator import validate_email
 
 from .exceptions import AppError, ClientError
