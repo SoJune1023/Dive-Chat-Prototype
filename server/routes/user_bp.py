@@ -117,6 +117,8 @@ def _registerHandle(req: RegisterPayload):
         return False, e.http_status, e.to_dict()
     except AppError as e:
         return False, e.http_status, e.to_dict()
+    except Exception as e:
+        return False, 500, {"error": "Something went wrong while register"}
 
 def _signinHandle(req: SigninPayload): ...
 
