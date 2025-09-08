@@ -69,7 +69,7 @@ def _norm_phone(raw_phone: str, default_region: str = "KR") -> str:
 
     return phonenumbers.format_number(num, PhoneNumberFormat.E164)
 
-def _norm_password(raw_password: str) -> str:
+def _validate_password(raw_password: str) -> str:
     if not PASSWORD_RE.fullmatch(raw_password):
         raise ClientError("Invalid password format", 400)
     return raw_password
@@ -88,7 +88,7 @@ def _register_payload_norm_flow(raw_email: str, raw_phone: str, raw_password: st
         return(
         _norm_email(raw_email),
         _norm_phone(raw_phone),
-        _norm_password(raw_password)
+        _validate_password(raw_password)
         )
     except ClientError:
         raise
