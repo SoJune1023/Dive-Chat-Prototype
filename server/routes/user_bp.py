@@ -53,6 +53,8 @@ import phonenumbers
 from phonenumbers import PhoneNumberFormat
 from email_validator import validate_email
 
+from ..security import hash_password
+
 from .exceptions import AppError, ClientError
 
 def _norm_email(raw_email: str) -> str:
@@ -69,11 +71,15 @@ def _norm_phone(raw_phone: str, default_region: str = "KR") -> str:
 
     return phonenumbers.format_number(num, PhoneNumberFormat.E164)
 
-def _validate_password(raw_password: str) -> str:
-    if not PASSWORD_RE.fullmatch(raw_password):
+def _validate_and_hash_password(raw_password: str) -> str:
+    try:
+        if not PASSWORD_RE.fullmatch(raw_password):
+            raise ClientError
+        return hash_password(raw_password)
+    except (TypeError, ValueError, ClientError):
+        raise ClientError(f"Invalid password format", 400)
+    except Exception:
         raise ClientError("Invalid password format", 400)
-    return raw_password
-
 # <---------- Flows ---------->
 def _register_get_payload_flow(payload: RegisterPayload) -> tuple[str, str, str]:
     user_info = payload.user_info
@@ -88,7 +94,7 @@ def _register_payload_norm_flow(raw_email: str, raw_phone: str, raw_password: st
         return(
         _norm_email(raw_email),
         _norm_phone(raw_phone),
-        _validate_password(raw_password)
+        _validate_and_hash_password(raw_password)
         )
     except ClientError:
         raise
