@@ -103,17 +103,6 @@ def _register_payload_norm_flow(raw_email: str, raw_phone: str, raw_password: st
         _log_exc("Payload validate | Something went wrong")
         raise Exception("Payload validate | Something went wrong") from e
 
-def _register_set_user_id_flow(email: str, phone: str) -> str:
-    try:
-        # TODO: 랜덤 arg 추가 후 encoding
-        # TODO: return
-        pass
-    except AppError as e:
-        raise AppError("Cannot set user_id", 500) from e
-    except Exception as e:
-        _log_exc("Error while set user_id | Unexcepted error", None, e)
-        raise AppError("Unexcepted error", 500) from e
-
 # <---------- Handles ---------->
 def _registerHandle(req: RegisterPayload):
     try:
