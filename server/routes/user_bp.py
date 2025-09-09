@@ -80,6 +80,7 @@ def _validate_and_hash_password(raw_password: str) -> str:
         raise ClientError(f"Invalid password format", 400)
     except Exception:
         raise ClientError("Invalid password format", 400)
+
 # <---------- Flows ---------->
 def _register_get_payload_flow(payload: RegisterPayload) -> tuple[str, str, str]:
     user_info = payload.user_info
