@@ -104,7 +104,7 @@ def _register_payload_norm_flow(raw_email: str, raw_phone: str, raw_password: st
         raise Exception("Payload validate | Something went wrong") from e
 
 # <---------- Handles ---------->
-def _registerHandle(req: RegisterPayload):
+def _registerHandle(req: RegisterPayload) -> tuple[bool, int, dict]:
     try:
         raw_email, raw_phone, raw_password = _register_get_payload_flow(req)
         email, phone, password = _register_payload_norm_flow(raw_email, raw_phone, raw_password)
@@ -115,7 +115,7 @@ def _registerHandle(req: RegisterPayload):
     except Exception as e:
         return False, 500, {"error": "Something went wrong while register"}
 
-def _signinHandle(req: SigninPayload): ...
+def _signinHandle(req: SigninPayload) -> tuple[bool, int, dict]: ...
 
 # <---------- Route ---------->
 from flask import Blueprint, request
