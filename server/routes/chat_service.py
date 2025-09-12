@@ -150,7 +150,7 @@ def _build_message_flow(previous: List[PrevItem], message: Optional[str]) -> Lis
 def _send_message_flow(model: str, message_input: List[PrevItem], prompt_input: str) -> Response:
     try:
         if model not in HANDLERS:
-            raise AppError("Wrong AI model", 400)
+            raise ClientError("Wrong AI model", 400)
 
         client_func, send_func = HANDLERS[model]
 
