@@ -30,6 +30,9 @@ def _get_conn() -> Connection:
         raise
 
 # <---------- Def exceptions ---------->
+from .exceptions import AppError
+from .exceptions import ClientError
+
 class UserNotFound(Exception): ...
 class InvalidUserData(Exception): ...
 class DatabaseError(Exception): ...
@@ -93,8 +96,6 @@ HANDLERS = {
 }
 
 # <---------- Flows ---------->
-from .exceptions import AppError
-
 def _payload_system_flow(req: Payload) -> tuple[str, str, Optional[str], Optional[str], int, List[PrevItem],str, str, Optional[List[ImgItem]]]:
     try:
         user = req.user
@@ -112,7 +113,7 @@ def _payload_system_flow(req: Payload) -> tuple[str, str, Optional[str], Optiona
             character.img_list if character.img_list else None # Optional[List[ImgItem]]
         )
     except ValidationError as e:
-        raise AppError("Payload system error | Wrong payload", 400) from e
+        raise ClientError("Payload system error | Wrong payload", 400) from e
     except Exception as e:
         raise Exception("Payload system error | Unexpected error", 500) from e
 
@@ -122,9 +123,9 @@ def _credit_system_flow(user_id: str, max_credit: int) -> None:
         if not _check_user_credit(user_credit, max_credit):
             raise AppError("Out of credit", 403)
     except UserNotFound as e:
-        raise AppError("Credit system error | User not found", 404) from e
+        raise ClientError("Credit system error | User not found", 404) from e
     except InvalidUserData as e:
-        raise AppError("Credit system error | Invalid user data", 500) from e
+        raise ClientError("Credit system error | Invalid user data", 500) from e
     except DatabaseError as e:
         _log_exc("Database error | Cannot loading user_credit", user_id, e) # DatabaseError는 매우 큰 Error -> log 남김
         raise AppError("Database error", 500) from e
@@ -165,7 +166,7 @@ def _send_message_flow(model: str, message_input: List[PrevItem], prompt_input: 
         raise AppError(f"Could not get response from {model}", 502) from e
 
 # <---------- Handle ---------->
-def _handle(req: Payload) -> tuple[bool, int, dict]:
+def handle(req: Payload) -> tuple[bool, int, dict]:
     try:
         user_id, model, message, note, max_credit, previous, prompt, public_prompt, img_list = _payload_system_flow(req)
         # _credit_system_flow(user_id, max_credit)
@@ -173,6 +174,8 @@ def _handle(req: Payload) -> tuple[bool, int, dict]:
         message_input = _build_message_flow(previous, message)
         response = _send_message_flow(model, message_input, prompt_input)
         return True, 200, response.model_dump()
+    except ClientError as e:
+        return False, e.http_status, e.to_dict()
     except AppError as e:
         return False, e.http_status, e.to_dict()
     except Exception as e:
