@@ -125,8 +125,7 @@ def _build_prompt_flow(img_list: Optional[List[ImgItem]], public_prompt: str, pr
         if img_list:
             img_choices = "\n".join(f"{i.key}: {i.url}" for i in img_list)
 
-        prompt_input = _build_prompt(public_prompt, prompt, img_choices, note)
-        return prompt_input
+        return _build_prompt(public_prompt, prompt, img_choices, note)
     except Exception as e:
         _log_exc("Unexpected error | Could not build prompt_input or img_choices", None, e)
         raise AppError("Cannot build prompt", 500) from e
@@ -147,8 +146,7 @@ def _send_message_flow(model: str, message_input: List[PrevItem], prompt_input: 
 
         client = client_func()
 
-        raw = send_func(client, message_input, prompt_input)
-        return raw
+        return send_func(client, message_input, prompt_input)
     except CacheMissError as e:
         _log_exc("Cache is missing | Client not found", None, e)
         raise AppError(f"{model} client not initialized", 502) from e
