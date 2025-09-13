@@ -103,7 +103,7 @@ def _register_user_upload_flow(email: str, phone: str, password: str) -> None:
             )
             conn.commit()
         except Exception as e:
-            _log_exc("DataBase error | DB insert failed in registerHandle", req.user_info.email, e)
+            _log_exc("DataBase error | DB insert failed in registerHandle", None, e)
             raise AppError("Failed to register user", 500)
 
 # <---------- Handles ---------->
