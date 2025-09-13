@@ -65,14 +65,6 @@ def _load_user_credit(user_id: str) -> int:
     except Exception as e:
         raise DatabaseError("Database error") from e
 
-def _check_user_credit(user_credit: int, max_credit: int) -> bool:
-    return user_credit >= max_credit
-
-def _build_img_choices(img_list: Optional[List[ImgItem]]) -> str:
-    if not img_list:
-        return ""
-    return "\n".join(f"{i.key}: {i.url}" for i in img_list)
-
 def _build_prompt(public_prompt: str, prompt: str, img_choices: str, note: Optional[str]) -> str:
     parts = [
         (public_prompt or "").strip(),
@@ -83,9 +75,6 @@ def _build_prompt(public_prompt: str, prompt: str, img_choices: str, note: Optio
     if img_choices:
         parts.extend(["Select one of the following images:", img_choices.strip()])
     return "\n".join(p for p in parts if p)
-
-def _build_message(previous: List[PrevItem], message: Optional[str]) -> List[PrevItem]:
-    return [m.model_dump() for m in previous] + [{"role": "user", "content": message}]
 
 # <---------- Def handlers ---------->
 from ..services import gpt_5_mini_send_message, gemini_send_message, gpt_setup_client, gemini_setup_client
@@ -120,8 +109,8 @@ def _payload_system_flow(req: Payload) -> tuple[str, str, Optional[str], Optiona
 def _credit_system_flow(user_id: str, max_credit: int) -> None:
     try:
         user_credit = _load_user_credit(user_id)
-        if not _check_user_credit(user_credit, max_credit):
-            raise AppError("Out of credit", 403)
+        if user_credit < max_credit(user_credit, max_credit):
+            raise ClientError("Out of credit", 403)
     except UserNotFound as e:
         raise ClientError("Credit system error | User not found", 404) from e
     except InvalidUserData as e:
@@ -132,7 +121,10 @@ def _credit_system_flow(user_id: str, max_credit: int) -> None:
 
 def _build_prompt_flow(img_list: Optional[List[ImgItem]], public_prompt: str, prompt: str, note: Optional[str]) -> str:
     try:
-        img_choices = _build_img_choices(img_list)
+        img_choices = ""
+        if img_list:
+            img_choices = "\n".join(f"{i.key}: {i.url}" for i in img_list)
+
         prompt_input = _build_prompt(public_prompt, prompt, img_choices, note)
         return prompt_input
     except Exception as e:
@@ -141,8 +133,7 @@ def _build_prompt_flow(img_list: Optional[List[ImgItem]], public_prompt: str, pr
 
 def _build_message_flow(previous: List[PrevItem], message: Optional[str]) -> List[PrevItem]:
     try:
-        message_input = _build_message(previous, message)
-        return message_input
+        return [m.model_dump() for m in previous] + [{"role": "user", "content": message}]
     except Exception as e:
         _log_exc(f"Unexpected error | Could not build message_input", None, e)
         raise AppError("Cannot build message", 500) from e
@@ -169,7 +160,7 @@ def _send_message_flow(model: str, message_input: List[PrevItem], prompt_input: 
 def handle(req: Payload) -> tuple[bool, int, dict]:
     try:
         user_id, model, message, note, max_credit, previous, prompt, public_prompt, img_list = _payload_system_flow(req)
-        # _credit_system_flow(user_id, max_credit)
+        _credit_system_flow(user_id, max_credit)
         prompt_input = _build_prompt_flow(img_list, public_prompt, prompt, note)
         message_input = _build_message_flow(previous, message)
         response = _send_message_flow(model, message_input, prompt_input)
