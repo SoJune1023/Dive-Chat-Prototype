@@ -91,6 +91,21 @@ def _register_payload_norm_flow(raw_email: str, raw_phone: str, raw_password: st
         _log_exc("Payload validate | Something went wrong")
         raise Exception("Payload validate | Something went wrong") from e
 
+def _register_user_upload_flow(email: str, phone: str, password: str) -> None:
+    with get_conn() as conn:
+        try:
+            conn.execute(
+                """
+                INSERT INTO users (email, phone, password)
+                VALUES (:email, :phone, :password)
+                """,
+                {"email": email, "phone": phone, "password": password},
+            )
+            conn.commit()
+        except Exception as e:
+            _log_exc("DataBase error | DB insert failed in registerHandle", req.user_info.email, e)
+            raise AppError("Failed to register user", 500)
+
 # <---------- Handles ---------->
 def registerHandle(req: RegisterPayload) -> tuple[bool, int, dict]:
     try:
@@ -98,21 +113,7 @@ def registerHandle(req: RegisterPayload) -> tuple[bool, int, dict]:
         email, phone, password = _register_payload_norm_flow(
             raw_email, raw_phone, raw_password
         )
-
-        with get_conn() as conn:
-            try:
-                conn.execute(
-                    """
-                    INSERT INTO users (email, phone, password)
-                    VALUES (:email, :phone, :password)
-                    """,
-                    {"email": email, "phone": phone, "password": password},
-                )
-                conn.commit()
-            except Exception as e:
-                _log_exc("DataBase error | DB insert failed in registerHandle", req.user_info.email, e)
-                raise AppError("Failed to register user", 500)
-
+        _register_user_upload_flow(email, phone, password)
         return True, 201, {"message": "User registered successfully"}
     except ClientError as e:
         return False, e.http_status, e.to_dict()
