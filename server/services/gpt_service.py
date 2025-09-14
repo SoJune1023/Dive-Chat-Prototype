@@ -3,7 +3,8 @@ import uuid
 import instructor
 from typing import List, Optional, Dict, Any
 from openai import OpenAI
-from schemas.ai_response import Response as RespModel  # Pydantic schema
+from schemas.ai_response import ChatResponse as ChatRespModel
+from schemas.ai_response import SummaryResponse as SummaryRespModel
 
 from ..config import OPENAI_API_KEY
 from ..config import GPT_MINI_MODEL
@@ -26,14 +27,14 @@ def gpt_5_mini_send_message(
     *,
     model: str = "GPT_MINI_MODEL",
     extra_headers: Optional[Dict[str, str]] = None
-) -> RespModel:
+) -> ChatRespModel:
     headers = {"Idempotency-Key": str(uuid.uuid4())}
     if extra_headers:
         headers.update(extra_headers)
 
-    resp: RespModel = client.chat.completions.create(
+    resp: ChatRespModel = client.chat.completions.create(
         model=model,
-        response_model=RespModel,
+        response_model=ChatRespModel,
         messages=[
             {"role": "system", "content": prompt_input},
             *message_input,
@@ -50,14 +51,14 @@ def gpt_5_mini_summary_note(
     *,
     model: str = "GPT_MINI_MODEL",
     extra_headers: Optional[Dict[str, str]] = None
-) -> any: # TODO: 맞는 schema 만들어서 끼워넣기
+) -> SummaryRespModel: # TODO: 맞는 schema 만들어서 끼워넣기
     headers = {"Idempotency-Key": str(uuid.uuid4())}
     if extra_headers:
         headers.update(extra_headers)
 
-    resp: RespModel = client.chat.completions.create(
+    resp: SummaryRespModel = client.chat.completions.create(
         model=model,
-        response_model=RespModel,
+        response_model=SummaryRespModel,
         messages=[
             {"role": "system", "content": prompt_input},
             *message_input,
