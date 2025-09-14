@@ -119,6 +119,9 @@ def _summary_check_cooldown_flow(user_id: str) -> None:
         if now - last_summary_req_time < SUMMARY_COOLDOWN:
             logger.warning(f"Too many request from {user_id}!")
             raise ClientError("Too Many Requests", 429)
+    except DatabaseError as e:
+        _log_exc("Database error while check user note cool down", None, e)
+        raise AppError("Database error while check user note cool down", 500) from e
     except Exception as e:
         _log_exc("Unexpected error while check user note cool down", None, e)
         raise AppError("Unexpected error while check user note cool down", 500) from e
