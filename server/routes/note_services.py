@@ -63,23 +63,30 @@ def _load_user_last_summary_req_time(user_id: str) -> int:
     except Exception as e:
         raise DatabaseError("Database error") from e
     
-def _format_summary_input(prevSummaryItem, prevUserNote, prevConversation) -> str:
-    parts = []
+def _format_summary_input(prevSummaryItem: List[str], prevUserNote: Optional[str], prevConversation: Optional[List[PrevConversation]], user_name: str) -> str:
+    try:
+        # TODO: Vibe coding 구문 수정
+        parts = []
 
-    if prevSummaryItem:
-        parts.append("Conversation Summary: " + ", ".join(prevSummaryItem))
+        if user_name:
+            parts.append("User name: " + user_name)
 
-    if prevUserNote:
-        parts.append("Previous UserNote: " + prevUserNote)
+        if prevSummaryItem:
+            parts.append("Conversation Summary: " + ", ".join(prevSummaryItem))
 
-    if prevConversation:
-        joined_convs = " | ".join(
-            f"user: {conv.user or 'None'}, system: {conv.system}"
-            for conv in prevConversation
-        )
-        parts.append("Conversation: " + joined_convs)
+        if prevUserNote:
+            parts.append("Previous UserNote: " + prevUserNote)
 
-    return " || ".join(parts)
+        if prevConversation:
+            joined_convs = " | ".join(
+                f"user: {conv.user or 'None'}, system: {conv.system}"
+                for conv in prevConversation
+            )
+            parts.append("Conversation: " + joined_convs)
+
+        return " || ".join(parts)
+    except Exception:
+        raise
 
 # <---------- Flows ---------->
 from typing import Optional, List
@@ -111,12 +118,12 @@ def _summary_check_cooldown_flow(user_id: str) -> None:
         _log_exc("Unexpected error while check user note cool down", None, e)
         raise AppError("Unexpected error while check user note cool down", 500) from e
 
-def _summary_format_summary_input_flow(prevSummaryItem: List[str], prevUserNote: Optional[str], prevConversation: Optional[List[PrevConversation]]) -> str:
+def _summary_format_summary_input_flow(prevSummaryItem: List[str], prevUserNote: Optional[str], prevConversation: Optional[List[PrevConversation]], user_name: str) -> str:
     try:
         if len(prevConversation) > SUMMARY_MAX_PREV:
             raise ClientError("Bad request", 400)
         
-        return _format_summary_input(prevSummaryItem, prevUserNote, prevConversation)
+        return _format_summary_input(prevSummaryItem, prevUserNote, prevConversation, user_name)
     except Exception as e:
         raise AppError("Unexpected error while build user note input", 500) from e
 
