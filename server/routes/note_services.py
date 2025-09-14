@@ -140,7 +140,7 @@ def summary_handle(req: SummaryPayload) -> tuple[bool, int, dict]:
     try:
         user_id, user_name, prevSummaryItem, prevUserNote, prevConversation = _summary_payload_system_flow(req)
         _summary_check_cooldown_flow(user_id)
-        format_summary_input = _summary_format_summary_input_flow(prevSummaryItem, prevUserNote, prevConversation)
+        format_summary_input = _summary_format_summary_input_flow(prevSummaryItem, prevUserNote, prevConversation, user_name)
         response = _summary_send_to_gpt_flow(format_summary_input)
         return True, 200, response
     except ClientError as e:
