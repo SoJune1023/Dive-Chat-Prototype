@@ -19,15 +19,38 @@ def gpt_setup_client() -> instructor:
     )
 
 # <---------- Request ---------->
-
 def gpt_5_mini_send_message(
     client: instructor.Instructor,
     message_input: List[dict],
     prompt_input: str,
     *,
     model: str = "GPT_MINI_MODEL",
-    extra_headers: Optional[Dict[str, str]] = None,
+    extra_headers: Optional[Dict[str, str]] = None
 ) -> RespModel:
+    headers = {"Idempotency-Key": str(uuid.uuid4())}
+    if extra_headers:
+        headers.update(extra_headers)
+
+    resp: RespModel = client.chat.completions.create(
+        model=model,
+        response_model=RespModel,
+        messages=[
+            {"role": "system", "content": prompt_input},
+            *message_input,
+        ],
+        extra_headers=headers,
+    )
+
+    return resp
+
+def gpt_5_mini_summary_note(
+    client: instructor.Instructor,
+    message_input: List[dict],
+    prompt_input: str,
+    *,
+    model: str = "GPT_MINI_MODEL",
+    extra_headers: Optional[Dict[str, str]] = None
+) -> any: # TODO: 맞는 schema 만들어서 끼워넣기
     headers = {"Idempotency-Key": str(uuid.uuid4())}
     if extra_headers:
         headers.update(extra_headers)
