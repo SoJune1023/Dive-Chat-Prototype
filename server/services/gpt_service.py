@@ -51,7 +51,7 @@ def gpt_5_mini_summary_note(
     *,
     model: str = "GPT_MINI_MODEL",
     extra_headers: Optional[Dict[str, str]] = None
-) -> SummaryRespModel: # TODO: 맞는 schema 만들어서 끼워넣기
+) -> SummaryRespModel:
     headers = {"Idempotency-Key": str(uuid.uuid4())}
     if extra_headers:
         headers.update(extra_headers)
