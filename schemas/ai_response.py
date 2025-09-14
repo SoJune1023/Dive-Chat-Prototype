@@ -6,6 +6,10 @@ class MessageItem(BaseModel):
     said: str
     context: str
 
-class Response(BaseModel):
+class ChatResponse(BaseModel):
     conversation: List[MessageItem]
     image_selected: str
+    summary: str
+
+class SummaryResponse(BaseModel):
+    result: str
