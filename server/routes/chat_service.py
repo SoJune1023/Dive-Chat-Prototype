@@ -27,8 +27,8 @@ def _get_conn() -> Connection:
         raise
 
 # <---------- Def exceptions ---------->
-from .exceptions import AppError
-from .exceptions import ClientError
+from ..exceptions import AppError
+from ..exceptions import ClientError
 
 class UserNotFound(Exception): ...
 class InvalidUserData(Exception): ...

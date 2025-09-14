@@ -43,7 +43,7 @@ from email_validator import validate_email
 
 from ..security import hash_password
 
-from .exceptions import AppError, ClientError
+from ..exceptions import AppError, ClientError
 
 def _norm_email(raw_email: str) -> str:
     raw = raw_email.strip().lower()
