@@ -28,17 +28,18 @@ def get_conn() -> Connection:
 
 # <---------- Payload ---------->
 from schemas.note import SummaryPayload, PrevConversation
+from schemas.ai_response import SummaryResponse
 
 # <---------- Flows ---------->
 from typing import Optional, List
 
-def _summary_payload_system_flow(req: SummaryPayload):
+def _summary_payload_system_flow(req: SummaryPayload) -> tuple[str, str, List[str], Optional[str], Optional[List[PrevConversation]]]:
     ...
 
-def _summary_check_cooldown_flow(user_id: str):
+def _summary_check_cooldown_flow(user_id: str) -> bool:
     ...
 
-def _summary_make_usernote_flow(prevSummaryItem: List[str], prevUserNote: Optional[str], prevConversation: Optional[List[PrevConversation]]):
+def _summary_make_usernote_flow(prevSummaryItem: List[str], prevUserNote: Optional[str], prevConversation: Optional[List[PrevConversation]]) -> SummaryResponse:
     ...
 
 # <---------- Handles ---------->
