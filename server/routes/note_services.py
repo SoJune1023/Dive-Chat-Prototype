@@ -104,6 +104,28 @@ def _upload_userNote_new(user_id: str, new_note: str) -> None:
         _log_exc("Failed to upload user note", user_id, e)
         raise DatabaseError("Could not upload user note") from e
 
+def _load_user_last_upload_req_time(user_id: str) -> int:
+    try:
+        with _get_conn() as conn:
+            row = conn.execute(
+                text("SELECT last_upload_req_time FROM users WHERE id = :id"),
+                {"id": user_id}
+            ).mappings().first()
+
+            if row is None:
+                raise UserNotFound("User not found")
+
+            last_upload_req_time = row["last_upload_req_time"]
+
+            if last_upload_req_time is None:
+                raise InvalidUserData("Invalid user data")
+
+            return int(last_upload_req_time)
+    except (UserNotFound, InvalidUserData):
+        raise
+    except Exception as e:
+        raise DatabaseError("Database error") from e
+
 # <---------- Flows ---------->
 from typing import Optional, List
 from datetime import datetime, timezone
@@ -130,10 +152,11 @@ def _summary_payload_system_flow(req: SummaryPayload) -> tuple[str, str, List[st
 def _summary_check_cooldown_flow(user_id: str) -> None:
     try:
         now = int(datetime.now(timezone.utc).timestamp())
+        last_req_time = _load_user_last_summary_req_time(user_id)
+        elapsed = now - last_req_time
 
-        last_summary_req_time = _load_user_last_summary_req_time(user_id)
-        if now - last_summary_req_time < SUMMARY_COOLDOWN:
-            logger.warning(f"Too many request from {user_id}!")
+        if elapsed < SUMMARY_COOLDOWN:
+            logger.warning(f"Too many upload requests from {user_id}! (elapsed={elapsed}s)")
             raise ClientError("Too Many Requests", 429)
     except DatabaseError as e:
         _log_exc("Database error while check user note cool down", None, e)
@@ -173,17 +196,18 @@ def _upload_payload_system_flow(req: UploadPayload) -> tuple[str, str]:
 def _upload_check_cooldown_flow(user_id: str) -> None:
     try:
         now = int(datetime.now(timezone.utc).timestamp())
+        last_req_time = _load_user_last_upload_req_time(user_id)
+        elapsed = now - last_req_time
 
-        last_summary_req_time = _load_user_last_summary_req_time(user_id)
-        if now - last_summary_req_time < UPLOAD_COOLDOWN:
-            logger.warning(f"Too many request from {user_id}!")
+        if elapsed < UPLOAD_COOLDOWN:
+            logger.warning(f"Too many upload requests from {user_id}! (elapsed={elapsed}s)")
             raise ClientError("Too Many Requests", 429)
     except DatabaseError as e:
-        _log_exc("Database error while check user note cool down", None, e)
-        raise AppError("Database error while check user note cool down", 500) from e
+        _log_exc("Database error while checking upload cooldown", user_id, e)
+        raise AppError("Failed to check upload cooldown", 500) from e
     except Exception as e:
-        _log_exc("Unexpected error while check user note cool down", None, e)
-        raise AppError("Unexpected error while check user note cool down", 500) from e
+        _log_exc("Unexpected error while checking upload cooldown", user_id, e)
+        raise AppError("Failed to check upload cooldown", 500) from e
     
 def _upload_userNote_new_flow(user_id: str, new_note: str) -> None:
     try:
