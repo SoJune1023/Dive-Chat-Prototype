@@ -37,7 +37,7 @@ def _get_conn() -> Connection:
         raise
 
 # <---------- Payload ---------->
-from schemas.note import SummaryPayload, PrevConversation
+from schemas.note import SummaryPayload, PrevConversation, UploadPayload
 from schemas.ai_response import SummaryResponse
 
 # <---------- Helpers ---------->
@@ -88,11 +88,27 @@ def _format_summary_input(prevSummaryItem: List[str], prevUserNote: Optional[str
     except Exception:
         raise
 
+def _upload_userNote_new(user_id: str, new_note: str) -> None:
+    try:
+        with _get_conn() as conn:
+            with conn.begin():
+                conn.execute(
+                    text("""
+                        INSERT INTO user_notes (user_id, note)
+                        VALUES (:user_id, :note)
+                        ON DUPLICATE KEY UPDATE note = :note
+                    """),
+                    {"user_id": user_id, "note": new_note}
+                )
+    except Exception as e:
+        _log_exc("Failed to upload user note", user_id, e)
+        raise DatabaseError("Could not upload user note") from e
+
 # <---------- Flows ---------->
 from typing import Optional, List
 from datetime import datetime, timezone
 
-from ..config import SUMMARY_COOLDOWN, SUMMARY_MAX_PREV, SUMMARY_PROMPT
+from ..config import SUMMARY_COOLDOWN, SUMMARY_MAX_PREV, SUMMARY_PROMPT, UPLOAD_COOLDOWN
 
 from ..services.gpt_service import gpt_setup_client, gpt_5_mini_summary_note
 
@@ -142,6 +158,42 @@ def _summary_send_to_gpt_flow(format_summary_input: str) -> SummaryResponse:
         return gpt_5_mini_summary_note(client, format_summary_input, SUMMARY_PROMPT)
     except Exception as e:
         raise AppError("Unexpected error while user note request to gpt") from e
+    
+def _upload_payload_system_flow(req: UploadPayload) -> tuple[str, str]:
+    try:
+        return(
+            req.user_id,
+            req.new_note
+        )
+    except ValueError as e:
+        raise ClientError("Payload system error | Wrong payload", 400) from e
+    except Exception as e:
+        raise Exception("Payload system error | Unexpected error", 500) from e
+
+def _upload_check_cooldown_flow(user_id: str) -> None:
+    try:
+        now = int(datetime.now(timezone.utc).timestamp())
+
+        last_summary_req_time = _load_user_last_summary_req_time(user_id)
+        if now - last_summary_req_time < UPLOAD_COOLDOWN:
+            logger.warning(f"Too many request from {user_id}!")
+            raise ClientError("Too Many Requests", 429)
+    except DatabaseError as e:
+        _log_exc("Database error while check user note cool down", None, e)
+        raise AppError("Database error while check user note cool down", 500) from e
+    except Exception as e:
+        _log_exc("Unexpected error while check user note cool down", None, e)
+        raise AppError("Unexpected error while check user note cool down", 500) from e
+    
+def _upload_userNote_new_flow(user_id: str, new_note: str) -> None:
+    try:
+        _upload_userNote_new(user_id, new_note)
+    except DatabaseError as e:
+        _log_exc("Database error while upload user note cool down", None, e)
+        raise AppError("Database error while upload user note cool down", 500) from e
+    except Exception as e:
+        _log_exc("Unexpected error while upload user note cool down", None, e)
+        raise AppError("Unexpected error while upload user note cool down", 500) from e
 
 # <---------- Handles ---------->
 def summary_handle(req: SummaryPayload) -> tuple[bool, int, dict]:
@@ -158,3 +210,16 @@ def summary_handle(req: SummaryPayload) -> tuple[bool, int, dict]:
     except Exception as e:
         _log_exc("Unexpected error while build user note", None, e)
         return False, 500, {"error": "something went wrong while build user note"}
+    
+def upload_handle(req: any) -> tuple[bool, int, dict | None]:
+    try:
+        user_id, new_note = _upload_payload_system_flow(req)
+        _upload_check_cooldown_flow(user_id)
+        _upload_userNote_new_flow(user_id, new_note)
+    except ClientError as e:
+        return False, e.http_status, e.to_dict()
+    except AppError as e:
+        return False, e.http_status, e.to_dict()
+    except Exception as e:
+        _log_exc("Unexpected error while build user note", None, e)
+        return False, 500, {"error": "something went wrong while upload user note"}

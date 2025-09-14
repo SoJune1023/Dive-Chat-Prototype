@@ -13,3 +13,7 @@ class SummaryPayload(BaseModel):
     prevSummaryItem: List[str]
     prevUserNote: Optional[str]
     prevConversation: Optional[List[PrevConversation]]
+
+class UploadPayload(BaseModel):
+    user_id: str
+    new_note: str
