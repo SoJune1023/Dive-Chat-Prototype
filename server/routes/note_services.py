@@ -108,24 +108,38 @@ def _summary_check_cooldown_flow(user_id: str) -> None:
         if "TEMP TODO: 현재시각 load 후 연산" < SUMMARY_COOLDOWN:
             raise ClientError("Too Many Requests", 429)
     except Exception as e:
+        _log_exc("Unexpected error while check user note cool down", None, e)
         raise AppError("Unexpected error while check user note cool down", 500) from e
 
-def _summary_make_usernote_flow(prevSummaryItem: List[str], prevUserNote: Optional[str], prevConversation: Optional[List[PrevConversation]]) -> str:
+def _summary_format_summary_input_flow(prevSummaryItem: List[str], prevUserNote: Optional[str], prevConversation: Optional[List[PrevConversation]]) -> str:
     try:
         if len(prevConversation) > SUMMARY_MAX_PREV:
             raise ClientError("Bad request", 400)
         
         return _format_summary_input(prevSummaryItem, prevUserNote, prevConversation)
     except Exception as e:
-        raise AppError("Unexpected error while make user note input", 500) from e
+        raise AppError("Unexpected error while build user note input", 500) from e
 
-def _summary_send_to_gpt_flow(user_note_input: str) -> SummaryResponse:
+def _summary_send_to_gpt_flow(format_summary_input: str) -> SummaryResponse:
     try:
         client = gpt_setup_client()
 
-        return gpt_5_mini_summary_note(client, user_note_input, SUMMARY_PROMPT)
+        return gpt_5_mini_summary_note(client, format_summary_input, SUMMARY_PROMPT)
     except Exception as e:
         raise AppError("Unexpected error while user note request to gpt") from e
 
 # <---------- Handles ---------->
-def summary_handle(req: SummaryPayload) -> tuple[bool, int, dict]: ...
+def summary_handle(req: SummaryPayload) -> tuple[bool, int, dict]:
+    try:
+        user_id, user_name, prevSummaryItem, prevUserNote, prevConversation = _summary_payload_system_flow(req)
+        _summary_check_cooldown_flow(user_id)
+        format_summary_input = _summary_format_summary_input_flow(prevSummaryItem, prevUserNote, prevConversation)
+        response = _summary_send_to_gpt_flow(format_summary_input)
+        return True, 200, response
+    except ClientError as e:
+        return False, e.http_status, e.to_dict()
+    except AppError as e:
+        return False, e.http_status, e.to_dict()
+    except Exception as e:
+        _log_exc("Unexpected error while build user note", None, e)
+        return False, 500, {"error": "something went wrong while build user note"}
