@@ -90,6 +90,8 @@ def _format_summary_input(prevSummaryItem: List[str], prevUserNote: Optional[str
 
 # <---------- Flows ---------->
 from typing import Optional, List
+from datetime import datetime, timezone
+
 from ..config import SUMMARY_COOLDOWN, SUMMARY_MAX_PREV, SUMMARY_PROMPT
 
 from ..services.gpt_service import gpt_setup_client, gpt_5_mini_summary_note
@@ -111,8 +113,11 @@ def _summary_payload_system_flow(req: SummaryPayload) -> tuple[str, str, List[st
 
 def _summary_check_cooldown_flow(user_id: str) -> None:
     try:
+        now = int(datetime.now(timezone.utc).timestamp())
+
         last_summary_req_time = _load_user_last_summary_req_time(user_id)
-        if "TEMP TODO: 현재시각 load 후 연산" < SUMMARY_COOLDOWN:
+        if now - last_summary_req_time < SUMMARY_COOLDOWN:
+            logger.warning(f"Too many request from {user_id}!")
             raise ClientError("Too Many Requests", 429)
     except Exception as e:
         _log_exc("Unexpected error while check user note cool down", None, e)
@@ -120,7 +125,7 @@ def _summary_check_cooldown_flow(user_id: str) -> None:
 
 def _summary_format_summary_input_flow(prevSummaryItem: List[str], prevUserNote: Optional[str], prevConversation: Optional[List[PrevConversation]], user_name: str) -> str:
     try:
-        if len(prevConversation) > SUMMARY_MAX_PREV:
+        if prevConversation and len(prevConversation) > SUMMARY_MAX_PREV:
             raise ClientError("Bad request", 400)
         
         return _format_summary_input(prevSummaryItem, prevUserNote, prevConversation, user_name)
