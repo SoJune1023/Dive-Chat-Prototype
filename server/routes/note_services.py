@@ -161,7 +161,12 @@ def _summary_check_cooldown_flow(user_id: str) -> None:
         _log_exc("Unexpected error while check user note cool down", None, e)
         raise AppError("Unexpected error while check user note cool down", 500) from e
 
-def _summary_format_summary_input_flow(prevSummaryItem: List[str], prevUserNote: Optional[str], prevConversation: Optional[List[PrevConversation]], user_name: str) -> str:
+def _summary_format_summary_input_flow(
+    prevSummaryItem: List[str],
+    prevUserNote: Optional[str],
+    prevConversation: Optional[List[PrevConversation]],
+    user_name: str
+) -> str:
     try:
         if prevConversation and len(prevConversation) > SUMMARY_MAX_PREV:
             raise ClientError("Bad request", 400)
