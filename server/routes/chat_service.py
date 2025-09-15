@@ -167,3 +167,6 @@ def chat_handle(req: ChatPayload) -> tuple[bool, int, dict]:
     except Exception as e:
         _log_exc("Unexpected error | Somthing went wrong in handle", getattr(req.user, "user_id", None), e)
         return False, 500, {"error": "Unexpected error in handle"}
+
+def enter_handle(req) -> tuple[bool, int, dict]:
+    ...
