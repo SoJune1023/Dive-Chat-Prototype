@@ -26,7 +26,6 @@ class Character(BaseModel):
 
 class ChatInfo(BaseModel):
     uuid: Optional[str] = " "
-    is_new: bool
 
 class ChatPayload(BaseModel):
     user: User

@@ -82,6 +82,8 @@ HANDLERS = {
 }
 
 # <---------- Flows ---------->
+from ..services.uuid import uuid7_builder
+
 def _chat_payload_system_flow(req: ChatPayload) -> tuple[str, str, Optional[str], Optional[str], int, List[PrevItem],str, str, Optional[List[ImgItem]], Optional[str], bool]:
     try:
         user = req.user
@@ -99,13 +101,20 @@ def _chat_payload_system_flow(req: ChatPayload) -> tuple[str, str, Optional[str]
             character.public_prompt, # str
             character.img_list if character.img_list else None, # Optional[List[ImgItem]]
 
-            info.uuid if info.uuid else None,
-            info.is_new
+            info.uuid if info.uuid else None
         )
     except ValidationError as e:
         raise ClientError("Payload system error | Wrong payload", 400) from e
     except Exception as e:
         raise Exception("Payload system error | Unexpected error", 500) from e
+
+def _chat_uuid_flow(uuid: Optional[str]) -> str:
+    try:
+        return uuid7_builder() if uuid else uuid
+    except AppError:
+        raise
+    except Exception as e:
+        raise AppError("Unexpected error", 500)
 
 def _chat_credit_system_flow(user_id: str, max_credit: int) -> None:
     try:
@@ -158,7 +167,8 @@ def _chat_send_message_flow(model: str, message_input: List[PrevItem], prompt_in
 # <---------- Handle ---------->
 def chat_handle(req: ChatPayload) -> tuple[bool, int, dict]:
     try:
-        user_id, model, message, note, max_credit, previous, prompt, public_prompt, img_list = _chat_payload_system_flow(req)
+        user_id, model, message, note, max_credit, previous, prompt, public_prompt, img_list, uuid = _chat_payload_system_flow(req)
+        uuid = _chat_uuid_flow(uuid)
         _chat_credit_system_flow(user_id, max_credit)
         prompt_input = _chat_build_prompt_flow(img_list, public_prompt, prompt, note)
         message_input = _chat_build_message_flow(previous, message)
