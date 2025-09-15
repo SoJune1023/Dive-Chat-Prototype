@@ -82,10 +82,11 @@ HANDLERS = {
 }
 
 # <---------- Flows ---------->
-def _chat_payload_system_flow(req: ChatPayload) -> tuple[str, str, Optional[str], Optional[str], int, List[PrevItem],str, str, Optional[List[ImgItem]]]:
+def _chat_payload_system_flow(req: ChatPayload) -> tuple[str, str, Optional[str], Optional[str], int, List[PrevItem],str, str, Optional[List[ImgItem]], Optional[str], bool]:
     try:
         user = req.user
         character = req.character
+        info = req.chatInfo
         return (
             user.user_id, # str
             user.model, # str
@@ -96,7 +97,10 @@ def _chat_payload_system_flow(req: ChatPayload) -> tuple[str, str, Optional[str]
 
             character.prompt, # str
             character.public_prompt, # str
-            character.img_list if character.img_list else None # Optional[List[ImgItem]]
+            character.img_list if character.img_list else None, # Optional[List[ImgItem]]
+
+            info.uuid if info.uuid else None,
+            info.is_new
         )
     except ValidationError as e:
         raise ClientError("Payload system error | Wrong payload", 400) from e
