@@ -24,6 +24,6 @@ class Character(BaseModel):
     img_default: str
     img_list: List[ImgItem]
 
-class Payload(BaseModel):
+class ChatPayload(BaseModel):
     user: User
     character: Character
