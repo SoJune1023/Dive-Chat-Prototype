@@ -65,17 +65,14 @@ def _load_user_last_summary_req_time(user_id: str) -> int:
     
 def _format_summary_input(prevSummaryItem: List[str], prevUserNote: Optional[str], prevConversation: Optional[List[PrevConversation]], user_name: str) -> str:
     try:
-        # TODO: Vibe coding 구문 수정
         parts = []
 
-        if user_name:
-            parts.append("User name: " + user_name)
+        parts.append(f"User name: {user_name}")
 
-        if prevSummaryItem:
-            parts.append("Conversation Summary: " + ", ".join(prevSummaryItem))
+        parts.append(f"Conversation Summary: {', '.join(prevSummaryItem)}")
 
         if prevUserNote:
-            parts.append("Previous UserNote: " + prevUserNote)
+            parts.append(f"Previous UserNote: {prevUserNote}")
 
         if prevConversation:
             joined_convs = " | ".join(
