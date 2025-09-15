@@ -231,7 +231,7 @@ def summary_handle(req: SummaryPayload) -> tuple[bool, int, dict]:
         _log_exc("Unexpected error while build user note", None, e)
         return False, 500, {"error": "something went wrong while build user note"}
     
-def upload_handle(req: any) -> tuple[bool, int, dict | None]:
+def upload_handle(req: UploadPayload) -> tuple[bool, int, dict | None]:
     try:
         user_id, new_note = _upload_payload_system_flow(req)
         _upload_check_cooldown_flow(user_id)
