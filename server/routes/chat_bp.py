@@ -1,12 +1,12 @@
 # <---------- Route ---------->
 from flask import Blueprint, jsonify, request
 
-from .chat_service import handle
-from schemas.chat import Payload
+from .chat_service import chat_handle
+from schemas.chat import ChatPayload
 
 chat_bp = Blueprint('chat_bp', __name__)
 @chat_bp.route('/onSend', methods = ['POST'])
 def onSend():
-    req = Payload(**request.get_json(force=True))
-    ok, code, body = handle(req)
+    req = ChatPayload(**request.get_json(force=True))
+    ok, code, body = chat_handle(req)
     return body, code

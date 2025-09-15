@@ -38,7 +38,7 @@ class CacheMissError(Exception): ...
 # <---------- Build helpers ---------->
 from typing import List, Optional
 from pydantic import ValidationError
-from schemas import Payload, PrevItem, ImgItem, Response
+from schemas import ChatPayload, PrevItem, ImgItem, ChatResponse
 
 def _load_user_credit(user_id: str) -> int:
     try:
@@ -82,7 +82,7 @@ HANDLERS = {
 }
 
 # <---------- Flows ---------->
-def _payload_system_flow(req: Payload) -> tuple[str, str, Optional[str], Optional[str], int, List[PrevItem],str, str, Optional[List[ImgItem]]]:
+def _payload_system_flow(req: ChatPayload) -> tuple[str, str, Optional[str], Optional[str], int, List[PrevItem],str, str, Optional[List[ImgItem]]]:
     try:
         user = req.user
         character = req.character
@@ -134,7 +134,7 @@ def _build_message_flow(previous: List[PrevItem], message: Optional[str]) -> Lis
         _log_exc(f"Unexpected error | Could not build message_input", None, e)
         raise AppError("Cannot build message", 500) from e
 
-def _send_message_flow(model: str, message_input: List[PrevItem], prompt_input: str) -> Response:
+def _send_message_flow(model: str, message_input: List[PrevItem], prompt_input: str) -> ChatResponse:
     try:
         if model not in HANDLERS:
             raise ClientError("Wrong AI model", 400)
@@ -152,7 +152,7 @@ def _send_message_flow(model: str, message_input: List[PrevItem], prompt_input: 
         raise AppError(f"Could not get response from {model}", 502) from e
 
 # <---------- Handle ---------->
-def handle(req: Payload) -> tuple[bool, int, dict]:
+def chat_handle(req: ChatPayload) -> tuple[bool, int, dict]:
     try:
         user_id, model, message, note, max_credit, previous, prompt, public_prompt, img_list = _payload_system_flow(req)
         _credit_system_flow(user_id, max_credit)
