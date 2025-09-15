@@ -82,6 +82,8 @@ HANDLERS = {
 }
 
 # <---------- Flows ---------->
+import uuid as py_uuid
+
 from ..services.uuid import uuid7_builder
 
 def _chat_payload_system_flow(req: ChatPayload) -> tuple[str, str, Optional[str], Optional[str], int, List[PrevItem],str, str, Optional[List[ImgItem]], Optional[str], bool]:
@@ -110,9 +112,14 @@ def _chat_payload_system_flow(req: ChatPayload) -> tuple[str, str, Optional[str]
 
 def _chat_uuid_flow(uuid: Optional[str]) -> str:
     try:
-        return uuid7_builder() if uuid else uuid
-    except AppError:
-        raise
+        if not uuid or not uuid.strip():
+            return uuid7_builder()
+        
+        try:
+            _ = py_uuid.UUID(uuid)
+            return uuid
+        except ValueError:
+            return uuid7_builder()
     except Exception as e:
         raise AppError("Unexpected error", 500)
 
