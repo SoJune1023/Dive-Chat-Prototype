@@ -37,8 +37,7 @@ def _get_conn() -> Connection:
         raise
 
 # <---------- Payload ---------->
-from schemas.note import SummaryPayload, PrevConversation, UploadPayload
-from schemas.ai_response import SummaryResponse
+from schemas import SummaryPayload, PrevConversation, UploadPayload, SummaryResponse
 
 # <---------- Helpers ---------->
 def _load_user_last_summary_req_time(user_id: str) -> int:
