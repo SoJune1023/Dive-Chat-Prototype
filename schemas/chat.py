@@ -31,3 +31,4 @@ class ChatInfo(BaseModel):
 class ChatPayload(BaseModel):
     user: User
     character: Character
+    chatInfo: ChatInfo
