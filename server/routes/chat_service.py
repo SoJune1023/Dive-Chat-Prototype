@@ -82,7 +82,7 @@ HANDLERS = {
 }
 
 # <---------- Flows ---------->
-def _payload_system_flow(req: ChatPayload) -> tuple[str, str, Optional[str], Optional[str], int, List[PrevItem],str, str, Optional[List[ImgItem]]]:
+def _chat_payload_system_flow(req: ChatPayload) -> tuple[str, str, Optional[str], Optional[str], int, List[PrevItem],str, str, Optional[List[ImgItem]]]:
     try:
         user = req.user
         character = req.character
@@ -103,7 +103,7 @@ def _payload_system_flow(req: ChatPayload) -> tuple[str, str, Optional[str], Opt
     except Exception as e:
         raise Exception("Payload system error | Unexpected error", 500) from e
 
-def _credit_system_flow(user_id: str, max_credit: int) -> None:
+def _chat_credit_system_flow(user_id: str, max_credit: int) -> None:
     try:
         user_credit = _load_user_credit(user_id)
         if user_credit < max_credit(user_credit, max_credit):
@@ -116,7 +116,7 @@ def _credit_system_flow(user_id: str, max_credit: int) -> None:
         _log_exc("Database error | Cannot loading user_credit", user_id, e) # DatabaseError는 매우 큰 Error -> log 남김
         raise AppError("Database error", 500) from e
 
-def _build_prompt_flow(img_list: Optional[List[ImgItem]], public_prompt: str, prompt: str, note: Optional[str]) -> str:
+def _chat_build_prompt_flow(img_list: Optional[List[ImgItem]], public_prompt: str, prompt: str, note: Optional[str]) -> str:
     try:
         img_choices = ""
         if img_list:
@@ -127,14 +127,14 @@ def _build_prompt_flow(img_list: Optional[List[ImgItem]], public_prompt: str, pr
         _log_exc("Unexpected error | Could not build prompt_input or img_choices", None, e)
         raise AppError("Cannot build prompt", 500) from e
 
-def _build_message_flow(previous: List[PrevItem], message: Optional[str]) -> List[PrevItem]:
+def _chat_build_message_flow(previous: List[PrevItem], message: Optional[str]) -> List[PrevItem]:
     try:
         return [m.model_dump() for m in previous] + [{"role": "user", "content": message}]
     except Exception as e:
         _log_exc(f"Unexpected error | Could not build message_input", None, e)
         raise AppError("Cannot build message", 500) from e
 
-def _send_message_flow(model: str, message_input: List[PrevItem], prompt_input: str) -> ChatResponse:
+def _chat_send_message_flow(model: str, message_input: List[PrevItem], prompt_input: str) -> ChatResponse:
     try:
         if model not in HANDLERS:
             raise ClientError("Wrong AI model", 400)
@@ -154,11 +154,11 @@ def _send_message_flow(model: str, message_input: List[PrevItem], prompt_input: 
 # <---------- Handle ---------->
 def chat_handle(req: ChatPayload) -> tuple[bool, int, dict]:
     try:
-        user_id, model, message, note, max_credit, previous, prompt, public_prompt, img_list = _payload_system_flow(req)
-        _credit_system_flow(user_id, max_credit)
-        prompt_input = _build_prompt_flow(img_list, public_prompt, prompt, note)
-        message_input = _build_message_flow(previous, message)
-        response = _send_message_flow(model, message_input, prompt_input)
+        user_id, model, message, note, max_credit, previous, prompt, public_prompt, img_list = _chat_payload_system_flow(req)
+        _chat_credit_system_flow(user_id, max_credit)
+        prompt_input = _chat_build_prompt_flow(img_list, public_prompt, prompt, note)
+        message_input = _chat_build_message_flow(previous, message)
+        response = _chat_send_message_flow(model, message_input, prompt_input)
         return True, 200, response.model_dump()
     except ClientError as e:
         return False, e.http_status, e.to_dict()
