@@ -34,7 +34,7 @@ class ChatPayload(BaseModel):
 
 class EvaluationChatPayload(BaseModel):
     is_good: bool
-    reasone: Optional[int] = 0
+    reasone: Optional[int]
     user: str
     request: str
     response: str
