@@ -35,7 +35,7 @@ class ChatPayload(BaseModel):
 class EvaluationChatPayload(BaseModel):
     is_good: bool
     reasone: Optional[int] = 0
-    user_id: str
+    user: str
     request: str
     response: str
     image: ImgItem
