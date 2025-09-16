@@ -107,7 +107,7 @@ def _chat_payload_system_flow(req: ChatPayload) -> tuple[str, str, Optional[str]
     except ValidationError as e:
         raise ClientError("Payload system error | Wrong payload", 400) from e
     except Exception as e:
-        raise Exception("Payload system error | Unexpected error", 500) from e
+        raise AppError("Payload system error | Unexpected error", 500) from e
 
 def _chat_uuid_flow(uuid: Optional[str]) -> str:
     try:
