@@ -1,5 +1,5 @@
 # <---------- def exceptions ---------->
-from ..exceptions import AppError
+from ..config import AppError
 
 # <---------- uuid ---------->
 from uuid_extensions import uuid7str

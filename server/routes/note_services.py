@@ -8,8 +8,7 @@ def _log_exc(msg: str, user_id: str | None, exc: Exception) -> None:
     logger.error(f"{msg}{suffix}", exc_info=exc)
 
 # <---------- Def exceptions ---------->
-from ..exceptions import AppError
-from ..exceptions import ClientError
+from config import AppError, ClientError
 from pydantic import ValidationError
 
 class UserNotFound(Exception): ...

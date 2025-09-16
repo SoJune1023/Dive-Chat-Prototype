@@ -6,8 +6,7 @@ from openai import OpenAI
 from schemas.ai_response import ChatResponse as ChatRespModel
 from schemas.ai_response import SummaryResponse as SummaryRespModel
 
-from ..config import OPENAI_API_KEY
-from ..config import GPT_MINI_MODEL
+from ..config.config import GPT_MINI_MODEL, OPENAI_API_KEY
 
 # <---------- Client ---------->
 def gpt_setup_client() -> instructor:
