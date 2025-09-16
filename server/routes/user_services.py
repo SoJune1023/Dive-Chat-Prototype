@@ -109,10 +109,9 @@ def _register_user_upload_flow(email: str, phone: str, password: str) -> None:
 # <---------- Handles ---------->
 def registerHandle(req: RegisterPayload) -> tuple[bool, int, dict]:
     try:
-        raw_email, raw_phone, raw_password = _register_get_payload_flow(req)
-        email, phone, password = _register_payload_norm_flow(
-            raw_email, raw_phone, raw_password
-        )
+        request = RegisterPayload(**req.get_json(force=True))
+        raw_email, raw_phone, raw_password = _register_get_payload_flow(request)
+        email, phone, password = _register_payload_norm_flow(raw_email, raw_phone, raw_password)
         _register_user_upload_flow(email, phone, password)
         return True, 201, {"message": "User registered successfully"}
     except ClientError as e:

@@ -185,7 +185,8 @@ def _evaluation_upload_feedback_flow(req: EvaluationChatPayload) -> None:
 # <---------- Handle ---------->
 def chat_handle(req: ChatPayload) -> tuple[bool, int, dict]:
     try:
-        user_id, model, message, note, max_credit, previous, prompt, public_prompt, img_list, uuid = _chat_payload_system_flow(req)
+        request = ChatPayload(**req)
+        user_id, model, message, note, max_credit, previous, prompt, public_prompt, img_list, uuid = _chat_payload_system_flow(request)
         uuid = _chat_uuid_flow(uuid)
         _chat_credit_system_flow(user_id, max_credit)
         prompt_input = _chat_build_prompt_flow(img_list, public_prompt, prompt, note)

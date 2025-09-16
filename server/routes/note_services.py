@@ -222,7 +222,8 @@ def _upload_userNote_new_flow(user_id: str, new_note: str) -> None:
 # <---------- Handles ---------->
 def summary_handle(req: SummaryPayload) -> tuple[bool, int, dict]:
     try:
-        user_id, user_name, prevSummaryItem, prevUserNote, prevConversation = _summary_payload_system_flow(req)
+        request = SummaryPayload(**req)
+        user_id, user_name, prevSummaryItem, prevUserNote, prevConversation = _summary_payload_system_flow(request)
         _summary_check_cooldown_flow(user_id)
         format_summary_input = _summary_format_summary_input_flow(prevSummaryItem, prevUserNote, prevConversation, user_name)
         response = _summary_send_to_gpt_flow(format_summary_input)
@@ -237,7 +238,8 @@ def summary_handle(req: SummaryPayload) -> tuple[bool, int, dict]:
     
 def upload_handle(req: UploadPayload) -> tuple[bool, int, dict | None]:
     try:
-        user_id, new_note = _upload_payload_system_flow(req)
+        request = UploadPayload(**req)
+        user_id, new_note = _upload_payload_system_flow(request)
         _upload_check_cooldown_flow(user_id)
         _upload_userNote_new_flow(user_id, new_note)
     except ClientError as e:
