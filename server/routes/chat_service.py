@@ -40,6 +40,16 @@ from pydantic import ValidationError
 from schemas import ChatPayload, PrevItem, ImgItem, ChatResponse, EvaluationChatPayload
 
 def _load_user_credit(user_id: str) -> int:
+    """유저의 크레딧값을 불러온다.
+    Args:
+        user_id (str): 유저 ID
+    Returns:
+        int: 유저의 크레딧 값
+    Raises:
+        UserNotFound: 해당 유저 ID가 존재하지 않는 경우
+        InvalidUserData: 크레딧 값이 None인 경우
+        DatabaseError: 데이터베이스 접근 도중 오류가 발생한 경우
+    """
     try:
         with _get_conn() as conn:
             row = conn.execute(
@@ -62,6 +72,15 @@ def _load_user_credit(user_id: str) -> int:
         raise DatabaseError("Database error") from e
 
 def _build_prompt(public_prompt: str, prompt: str, img_choices: str, note: Optional[str]) -> str:
+    """프롬프트를 빌드한다.
+    Args:
+        public_prompt (str): 공용 프롬프트
+        prompt (str): 캐릭터 프롬프트
+        img_choices (str): 이미지 url과 그에 맞는 설명
+        note (str | None): 유저 노트
+    Returns:
+        str: 빌드 된 프롬프트 결과물
+    """
     parts = [
         (public_prompt or "").strip(),
         (prompt or "").strip(),
@@ -86,6 +105,25 @@ import uuid as py_uuid
 from ..services.uuid import uuid7_builder
 
 def _chat_payload_system_flow(req: ChatPayload) -> tuple[str, str, Optional[str], Optional[str], int, List[PrevItem],str, str, Optional[List[ImgItem]], Optional[str], bool]:
+    """요청 페이로드에서 필요한 필드를 추출해 튜플로 반환한다.
+    Args:
+        req (ChatPayload): 요청 페이로드
+    Returns:
+        tuple: 다음 순서의 값들
+            1. user_id (str)
+            2. model (str)
+            3. message (str)
+            4. note (str | None)
+            5. max_credit (int | None)
+            6. previous (list)
+            7. prompt (str | None)
+            8. public_prompt (str | None)
+            9. img_list (list)
+            10. uuid (str | None)
+    Raises:
+        ClientError: 필수 필드가 비어 있거나 형식이 잘못된 경우
+        AppError: 튜플 반환 중 알 수 없는 오류가 발생한 경우
+    """
     try:
         user = req.user
         character = req.character
@@ -110,6 +148,14 @@ def _chat_payload_system_flow(req: ChatPayload) -> tuple[str, str, Optional[str]
         raise AppError("Payload system error | Unexpected error", 500) from e
 
 def _chat_uuid_flow(uuid: Optional[str]) -> str:
+    """채팅방의 고유 uuid를 확인하고 uuid 값이 옳지 않거나 존재하지 않는다면 생성한다. 아닐 경우 그대로 반환한다.
+    Args:
+        uuid (str): 채팅방 고유 uuid
+    Returns:
+        str: 새로 생성 된 uuid(uuid 값이 옳지 않거나 존재하지 않는다면) 혹은 기존 uuid
+    Raises:
+        AppError: uuid 확인 도중 알 수 없는 에러가 발생한 경우
+    """
     try:
         if not uuid or not uuid.strip():
             return uuid7_builder()
@@ -124,8 +170,17 @@ def _chat_uuid_flow(uuid: Optional[str]) -> str:
         raise AppError("Unexpected error", 500) from e
 
 def _chat_credit_system_flow(user_id: str, max_credit: int) -> None:
+    """유저 보유 크레딧을 최대 소비 가능 크레딧과 비교한다.
+    Args:
+        user_id (str): 유저 ID
+        max_credit (int): 최대 소비 가능 크레딧
+    Raises:
+        ClientError: 크레딧이 부족하거나 크레딧 값을 불러올 수 없는 경우
+        AppError: 데이터베이스 오류가 발생한 경우
+    """
     try:
         user_credit = _load_user_credit(user_id)
+        # TODO: max_credit 인자를 시스템 설정 내에서 올바른 범위에 위치하는지 확인
         if user_credit < max_credit(user_credit, max_credit):
             raise ClientError("Out of credit", 403)
     except UserNotFound as e:
@@ -137,7 +192,20 @@ def _chat_credit_system_flow(user_id: str, max_credit: int) -> None:
         raise AppError("Database error", 500) from e
 
 def _chat_build_prompt_flow(img_list: Optional[List[ImgItem]], public_prompt: str, prompt: str, note: Optional[str]) -> str:
+    """프롬프트를 빌드하고 반환한다.
+    Args:
+        img_list (list[ImgItem]): 이미지 url과 그것의 설명
+        public_prompt (str): 공용 프롬프트
+        prompt (str): 캐릭터 프롬프트
+        note (str): 유저 노트
+    Returns:
+        str: 빌드 된 프롬프트 결과
+    Raise:
+        AppError: 프롬프트 빌드 중 오류가 발생한 경우
+    """
     try:
+        # TODO: 올바른 공용 프롬프트를 설정에서 불러오기. 그렇지 못한 경우 ClientError raise 하기
+
         img_choices = ""
         if img_list:
             img_choices = "\n".join(f"{i.key}: {i.url}" for i in img_list)
@@ -148,6 +216,13 @@ def _chat_build_prompt_flow(img_list: Optional[List[ImgItem]], public_prompt: st
         raise AppError("Cannot build prompt", 500) from e
 
 def _chat_build_message_flow(previous: List[PrevItem], message: Optional[str]) -> List[PrevItem]:
+    """메시지를 빌드하고 반환한다.
+    Args:
+        previous (list[PrevItem]): 과거 대화
+        message (str | None): 메시지
+    Raises:
+        AppError: 메시지 빌드에 실패한 경우
+    """
     try:
         return [m.model_dump() for m in previous] + [{"role": "user", "content": message}]
     except Exception as e:
