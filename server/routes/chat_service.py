@@ -230,6 +230,16 @@ def _chat_build_message_flow(previous: List[PrevItem], message: Optional[str]) -
         raise AppError("Cannot build message", 500) from e
 
 def _chat_send_message_flow(model: str, message_input: List[PrevItem], prompt_input: str) -> ChatResponse:
+    """AI 모델에게 메시지를 보내고 그 결과를 반환한다.
+    Args:
+        model (str): AI 모델
+        message_input (list[PrevItem]): 메시지
+        primpt_input (str) : 프롬프트
+    Return:
+        ChatResponse: AI 모델의 답변
+    Raises:
+        AppError: 클라이언트 생성 실패 혹은 결과를 받지 못한 경우
+    """
     try:
         if model not in HANDLERS:
             raise ClientError("Wrong AI model", 400)
