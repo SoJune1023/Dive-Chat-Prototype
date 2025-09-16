@@ -94,9 +94,17 @@ def _build_prompt(public_prompt: str, prompt: str, img_choices: str, note: Optio
 # <---------- Def handlers ---------->
 from ..services import gpt_5_mini_send_message, gemini_send_message, gpt_setup_client, gemini_setup_client
 
-HANDLERS = {
+AI__FUNC_HANDLERS = {
     "gpt": (gpt_setup_client, gpt_5_mini_send_message),
     "gemini": (gemini_setup_client, gemini_send_message),
+}
+
+from ...prompt import PUBLIC_PROMPT_A, PUBLIC_PROMPT_B, PUBLIC_PROMPT_C
+
+PUBLIC_PROMPT_HANDLERS = {
+    "PP_A": (PUBLIC_PROMPT_A),
+    "PP_B": (PUBLIC_PROMPT_B),
+    "PP_C": (PUBLIC_PROMPT_C)
 }
 
 # <---------- Flows ---------->
@@ -209,13 +217,16 @@ def _chat_build_prompt_flow(img_list: Optional[List[ImgItem]], public_prompt: st
         AppError: 프롬프트 빌드 중 오류가 발생한 경우
     """
     try:
-        # TODO: 올바른 공용 프롬프트를 설정에서 불러오기. 그렇지 못한 경우 ClientError raise 하기
+        if not public_prompt in PUBLIC_PROMPT_HANDLERS:
+            raise ClientError("Wrong public prompt", 400)
+
+        public = PUBLIC_PROMPT_HANDLERS[public_prompt]
 
         img_choices = ""
         if img_list:
             img_choices = "\n".join(f"{i.key}: {i.url}" for i in img_list)
 
-        return _build_prompt(public_prompt, prompt, img_choices, note)
+        return _build_prompt(public, prompt, img_choices, note)
     except Exception as e:
         _log_exc("Unexpected error | Could not build prompt_input or img_choices", None, e)
         raise AppError("Cannot build prompt", 500) from e
@@ -246,10 +257,10 @@ def _chat_send_message_flow(model: str, message_input: List[PrevItem], prompt_in
         AppError: 클라이언트 생성 실패 혹은 결과를 받지 못한 경우
     """
     try:
-        if model not in HANDLERS:
+        if model not in AI__FUNC_HANDLERS:
             raise ClientError("Wrong AI model", 400)
 
-        client_func, send_func = HANDLERS[model]
+        client_func, send_func = AI__FUNC_HANDLERS[model]
 
         client = client_func()
 
