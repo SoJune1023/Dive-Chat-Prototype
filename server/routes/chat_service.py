@@ -37,7 +37,7 @@ class CacheMissError(Exception): ...
 # <---------- Build helpers ---------->
 from typing import List, Optional
 from pydantic import ValidationError
-from schemas import ChatPayload, PrevItem, ImgItem, ChatResponse
+from schemas import ChatPayload, PrevItem, ImgItem, ChatResponse, EvaluationChatPayload
 
 def _load_user_credit(user_id: str) -> int:
     try:
@@ -171,6 +171,17 @@ def _chat_send_message_flow(model: str, message_input: List[PrevItem], prompt_in
         _log_exc("Upstream model error | Cannot get response", None, e)
         raise AppError(f"Could not get response from {model}", 502) from e
 
+def _evaluation_upload_feedback_flow(req: EvaluationChatPayload) -> None:
+    try:
+        ...
+    except UserNotFound as e:
+        raise ClientError("Evaluation upload error | User not found", 404) from e
+    except InvalidUserData as e:
+        raise ClientError("Evaluation upload system error | Invalid user data", 500) from e
+    except DatabaseError as e:
+        _log_exc("Database error | Cannot upload feedback", getattr(req.user, "user_id", None), e) # DatabaseError는 매우 큰 Error -> log 남김
+        raise AppError("Database error", 500) from e
+
 # <---------- Handle ---------->
 def chat_handle(req: ChatPayload) -> tuple[bool, int, dict]:
     try:
@@ -188,3 +199,14 @@ def chat_handle(req: ChatPayload) -> tuple[bool, int, dict]:
     except Exception as e:
         _log_exc("Unexpected error | Somthing went wrong in handle", getattr(req.user, "user_id", None), e)
         return False, 500, {"error": "Unexpected error in handle"}
+
+def evaluation_handle(req: EvaluationChatPayload) -> tuple[bool, int, dict]:
+    try:
+        ...
+    except ClientError as e:
+        return False, e.http_status, e.to_dict()
+    except AppError as e:
+        return False, e.http_status, e.to_dict()
+    except Exception as e:
+        _log_exc("Unexpected error | Somthing went wrong in evaluation handle", getattr(req.user, "user_id", None), e)
+        return False, 500, {"error": "Unexpected error in evaluation handle"}
