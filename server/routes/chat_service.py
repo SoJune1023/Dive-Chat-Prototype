@@ -184,7 +184,7 @@ def _chat_credit_system_flow(user_id: str, max_credit: int) -> None:
 
         if not SYSTEM_MIN_CREDIT < max_credit < SYSTEM_MAX_CREDIT:
             logger.warning(f"Wrong max_credit arg from {user_id}! Credit: {max_credit}")
-            raise ClientError("Wrong arg", 403)
+            raise ClientError("Wrong max_credit value", 400)
         
         if user_credit < max_credit(user_credit, max_credit):
             raise ClientError("Out of credit", 403)
