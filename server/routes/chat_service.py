@@ -120,7 +120,8 @@ def _chat_uuid_flow(uuid: Optional[str]) -> str:
         except ValueError:
             return uuid7_builder()
     except Exception as e:
-        raise AppError("Unexpected error", 500)
+        _log_exc("Unexpected error at _chat_uuid_flow", None, e)
+        raise AppError("Unexpected error", 500) from e
 
 def _chat_credit_system_flow(user_id: str, max_credit: int) -> None:
     try:
