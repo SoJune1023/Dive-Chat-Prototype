@@ -4,7 +4,7 @@ from typing import List, Optional, Dict, Any
 
 from google import genai
 from google.genai import types
-from schemas.ai_response import Response
+from schemas.ai_response import ChatResponse as ChatRespModel
 
 # ---- Client ----
 def gemini_setup_client() -> genai.Client:
@@ -100,7 +100,7 @@ def _build_config(
         # 아래 두 항목은 신버전에서 JSON 구조화를 지원.
         # 구버전/호환 이슈가 있으면 try/except로 제거 fallback.
         response_mime_type="application/json",
-        response_schema=Response.model_json_schema(),
+        response_schema=ChatRespModel.model_json_schema(),
     )
     if seed is not None:
         cfg["seed"] = seed
@@ -127,7 +127,7 @@ def gemini_send_message(
     extra_headers: Optional[Dict[str, str]] = None,
     timeout: Optional[int] = None,
     stream: bool = False,
-) -> Response:
+) -> ChatRespModel:
     contents = _to_genai_contents(message_input)
     config = _build_config(
         prompt_input=prompt_input,
@@ -158,7 +158,7 @@ def gemini_send_message(
         text_joined = "".join(full_text).strip()
         try:
             j = _extract_json_text(text_joined)
-            return Response.model_validate(json.loads(j))
+            return ChatRespModel.model_validate(json.loads(j))
         except Exception as e:
             raise ValueError(f"Failed to parse stream response into Response: {text_joined}") from e
 
@@ -167,6 +167,6 @@ def gemini_send_message(
     try:
         text = _extract_text(resp)
         j = _extract_json_text(text)
-        return Response.model_validate(json.loads(j))
+        return ChatRespModel.model_validate(json.loads(j))
     except Exception as e:
         raise ValueError(f"Failed to parse response into Response: {_extract_text(resp)}") from e
