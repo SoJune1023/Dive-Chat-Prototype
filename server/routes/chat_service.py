@@ -103,6 +103,7 @@ HANDLERS = {
 import uuid as py_uuid
 
 from ..services.uuid import uuid7_builder
+from ..config.config import SYSTEM_MIN_CREDIT, SYSTEM_MAX_CREDIT
 
 def _chat_payload_system_flow(req: ChatPayload) -> tuple[str, str, Optional[str], Optional[str], int, List[PrevItem],str, str, Optional[List[ImgItem]], Optional[str], bool]:
     """요청 페이로드에서 필요한 필드를 추출해 튜플로 반환한다.
@@ -180,7 +181,11 @@ def _chat_credit_system_flow(user_id: str, max_credit: int) -> None:
     """
     try:
         user_credit = _load_user_credit(user_id)
-        # TODO: max_credit 인자를 시스템 설정 내에서 올바른 범위에 위치하는지 확인
+
+        if not SYSTEM_MIN_CREDIT < max_credit < SYSTEM_MAX_CREDIT:
+            logger.warning(f"Wrong max_credit arg from {user_id}! Credit: {max_credit}")
+            raise ClientError("Wrong arg", 403)
+        
         if user_credit < max_credit(user_credit, max_credit):
             raise ClientError("Out of credit", 403)
     except UserNotFound as e:
