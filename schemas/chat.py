@@ -31,3 +31,11 @@ class ChatPayload(BaseModel):
     user: User
     character: Character
     chatInfo: ChatInfo
+
+class EvaluationChatPayload(BaseModel):
+    is_good: bool
+    reasone: Optional[int] = 0
+    user_id: str
+    request: str
+    response: str
+    image: ImgItem
