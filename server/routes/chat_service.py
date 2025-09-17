@@ -91,6 +91,44 @@ def _build_prompt(public_prompt: str, prompt: str, img_choices: str, note: Optio
         parts.extend(["Select one of the following images:", img_choices.strip()])
     return "\n".join(p for p in parts if p)
 
+def _load_user_last_evalutaion_req_time(user_id: str) -> int:
+    try:
+        with _get_conn() as conn:
+            row = conn.execute(
+                text("SELECT last_evalutaion_req_time FROM users WHERE id = :id"),
+                {"id": user_id}
+            ).mappings().first()
+
+            if row is None:
+                raise UserNotFound("User not found")
+
+            last_evalutaion_req_time = row["last_evalutaion_req_time"]
+
+            if last_evalutaion_req_time is None:
+                raise InvalidUserData("Invalid user data")
+
+            return int(last_evalutaion_req_time)
+    except (UserNotFound, InvalidUserData):
+        raise
+    except Exception as e:
+        raise DatabaseError("Database error") from e
+
+def _upload_user_last_evaluation_req_time(user_id: str, now: int) -> None:
+    try:
+        with _get_conn() as conn:
+            with conn.begin():
+                conn.execute(
+                    text("""
+                        INSERT INTO user_notes (user_id, note)
+                        VALUES (:user_id, :note)
+                        ON DUPLICATE KEY UPDATE note = :note
+                    """),
+                    {"user_id": user_id, "last_evalutaion_req_time": now}
+                )
+    except Exception as e:
+        _log_exc("Failed to upload last_evaluation_req_time", user_id, e)
+        raise DatabaseError("Could not upload last_evaluation_req_time") from e
+
 # <---------- Def handlers ---------->
 from ..services import gpt_5_mini_send_message, gemini_send_message, gpt_setup_client, gemini_setup_client
 
@@ -109,9 +147,10 @@ PUBLIC_PROMPT_HANDLERS = {
 
 # <---------- Flows ---------->
 import uuid as py_uuid
+from datetime import datetime, timezone
 
 from ..services.uuid import uuid7_builder
-from ..config.config import SYSTEM_MIN_CREDIT, SYSTEM_MAX_CREDIT
+from ..config.config import SYSTEM_MIN_CREDIT, SYSTEM_MAX_CREDIT, EVALUATION_COOLDOWN
 
 def _chat_payload_system_flow(req: ChatPayload) -> tuple[str, str, Optional[str], Optional[str], int, List[PrevItem],str, str, Optional[List[ImgItem]], Optional[str], bool]:
     """요청 페이로드에서 필요한 필드를 추출해 튜플로 반환한다.
@@ -272,16 +311,37 @@ def _chat_send_message_flow(model: str, message_input: List[PrevItem], prompt_in
         _log_exc("Upstream model error | Cannot get response", None, e)
         raise AppError(f"Could not get response from {model}", 502) from e
 
-def _evaluation_upload_feedback_flow(req: EvaluationChatPayload) -> None:
+def _evaluation_check_cooldown_flow(user_id: str) -> None:
     try:
-        ...
+        now = int(datetime.now(timezone.utc).timestamp())
+        last_req_time = _load_user_last_evalutaion_req_time(user_id)
+        elapsed = now - last_req_time
+
+        if elapsed < EVALUATION_COOLDOWN:
+            logger.warning(f"Too many evaluation chat requests from {user_id}! (elapsed={elapsed}s)")
+            raise ClientError("Too Many Requests", 429)
+    except DatabaseError as e:
+        _log_exc("Database error while checking evaluation chat cooldown", user_id, e)
+        raise AppError("Failed to check evaluation chat cooldown", 500) from e
+    except Exception as e:
+        _log_exc("Unexpected error while checking evaluation chat cooldown", user_id, e)
+        raise AppError("Failed to check evaluation chat cooldown", 500) from e
+
+def _evaluation_upload_reqTime_flow(user_id: str) -> None:
+    try:
+        now = int(datetime.now(timezone.utc).timestamp())
+        _upload_user_last_evaluation_req_time(user_id, now)
     except UserNotFound as e:
         raise ClientError("Evaluation upload error | User not found", 404) from e
     except InvalidUserData as e:
         raise ClientError("Evaluation upload system error | Invalid user data", 500) from e
     except DatabaseError as e:
-        _log_exc("Database error | Cannot upload feedback", getattr(req.user, "user_id", None), e) # DatabaseError는 매우 큰 Error -> log 남김
+        _log_exc("Database error | Cannot upload feedback", user_id, e) # DatabaseError는 매우 큰 Error -> log 남김
         raise AppError("Database error", 500) from e
+
+def _evaltauion_upload_feedback_flow(req: EvaluationChatPayload) -> None:
+    # TODO: UPLOAD FEEDBACK AT DATABASE
+    pass
 
 # <---------- Handle ---------->
 def chat_handle(req: ChatPayload) -> tuple[bool, int, dict]:
@@ -304,7 +364,10 @@ def chat_handle(req: ChatPayload) -> tuple[bool, int, dict]:
 
 def evaluation_handle(req: EvaluationChatPayload) -> tuple[bool, int, dict]:
     try:
-        ...
+        request = EvaluationChatPayload(**req)
+        _evaluation_check_cooldown_flow(request.user)
+        _evaluation_upload_reqTime_flow(request.user)
+        _evaltauion_upload_feedback_flow(request)
     except ClientError as e:
         return False, e.http_status, e.to_dict()
     except AppError as e:
