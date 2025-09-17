@@ -312,6 +312,13 @@ def _chat_send_message_flow(model: str, message_input: List[PrevItem], prompt_in
         raise AppError(f"Could not get response from {model}", 502) from e
 
 def _evaluation_check_cooldown_flow(user_id: str) -> None:
+    """채팅 평가 시간을 체크한다.
+    Args:
+        user_id (str): 유저 ID
+    Raises:
+        ClientError: 유저가 과도한 요청을 날린 경우 혹은 유저를 확인할 수 없는 경우
+        AppError: 데이터베이스 오류가 발생한 경우
+    """
     try:
         now = int(datetime.now(timezone.utc).timestamp())
         last_req_time = _load_user_last_evalutaion_req_time(user_id)
@@ -328,6 +335,13 @@ def _evaluation_check_cooldown_flow(user_id: str) -> None:
         raise AppError("Failed to check evaluation chat cooldown", 500) from e
 
 def _evaluation_upload_reqTime_flow(user_id: str) -> None:
+    """채팅 평가 시각을 업로드 한다.
+    Args:
+        user_id (str): 유저 ID
+    Raises:
+        ClientError: 유저를 확인할 수 없는 경우
+        AppError: 데이터베이스 오류가 발생한 경우
+    """
     try:
         now = int(datetime.now(timezone.utc).timestamp())
         _upload_user_last_evaluation_req_time(user_id, now)
