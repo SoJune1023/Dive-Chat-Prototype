@@ -71,7 +71,12 @@ def _load_user_credit(user_id: str) -> int:
     except Exception as e:
         raise DatabaseError("Database error") from e
 
-def _build_prompt(public_prompt: str, prompt: str, img_choices: str, note: Optional[str]) -> str:
+def _build_prompt(
+    public_prompt: str,
+    prompt: str,
+    img_choices: str,
+    note: Optional[str]
+) -> str:
     """프롬프트를 빌드한다.
     Args:
         public_prompt (str): 공용 프롬프트
@@ -152,7 +157,9 @@ from datetime import datetime, timezone
 from ..services.uuid import uuid7_builder
 from ..config.config import SYSTEM_MIN_CREDIT, SYSTEM_MAX_CREDIT, EVALUATION_COOLDOWN
 
-def _chat_payload_system_flow(req: ChatPayload) -> tuple[str, str, Optional[str], Optional[str], int, List[PrevItem],str, str, Optional[List[ImgItem]], Optional[str], bool]:
+def _chat_payload_system_flow(
+    req: ChatPayload
+) -> tuple[str, str, Optional[str], Optional[str], int, List[PrevItem],str, str, Optional[List[ImgItem]], Optional[str], bool]:
     """요청 페이로드에서 필요한 필드를 추출해 튜플로 반환한다.
     Args:
         req (ChatPayload): 요청 페이로드
@@ -243,7 +250,12 @@ def _chat_credit_system_flow(user_id: str, max_credit: int) -> None:
         _log_exc("Database error | Cannot loading user_credit", user_id, e) # DatabaseError는 매우 큰 Error -> log 남김
         raise AppError("Database error", 500) from e
 
-def _chat_build_prompt_flow(img_list: Optional[List[ImgItem]], public_prompt: str, prompt: str, note: Optional[str]) -> str:
+def _chat_build_prompt_flow(
+    img_list: Optional[List[ImgItem]],
+    public_prompt: str,
+    prompt: str,
+    note: Optional[str]
+) -> str:
     """프롬프트를 빌드하고 반환한다.
     Args:
         img_list (list[ImgItem]): 이미지 url과 그것의 설명
@@ -270,7 +282,10 @@ def _chat_build_prompt_flow(img_list: Optional[List[ImgItem]], public_prompt: st
         _log_exc("Unexpected error | Could not build prompt_input or img_choices", None, e)
         raise AppError("Cannot build prompt", 500) from e
 
-def _chat_build_message_flow(previous: List[PrevItem], message: Optional[str]) -> List[PrevItem]:
+def _chat_build_message_flow(
+    previous: List[PrevItem],
+    message: Optional[str]
+) -> List[PrevItem]:
     """메시지를 빌드하고 반환한다.
     Args:
         previous (list[PrevItem]): 과거 대화
@@ -284,7 +299,11 @@ def _chat_build_message_flow(previous: List[PrevItem], message: Optional[str]) -
         _log_exc(f"Unexpected error | Could not build message_input", None, e)
         raise AppError("Cannot build message", 500) from e
 
-def _chat_send_message_flow(model: str, message_input: List[PrevItem], prompt_input: str) -> ChatResponse:
+def _chat_send_message_flow(
+    model: str,
+    message_input: List[PrevItem],
+    prompt_input: str
+) -> ChatResponse:
     """AI 모델에게 메시지를 보내고 그 결과를 반환한다.
     Args:
         model (str): AI 모델
